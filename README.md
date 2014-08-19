@@ -62,4 +62,4 @@ Post the output and notify Primary that the job is complete
 
 Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
 
-![Model Runner Architecture](http://sel-columbia.github.io/model_runner/diagram.svg "Model Runner Architecture")
+<embed src="http://sel-columbia.github.io/model_runner/diagram.svg" type="image/svg+xml" />
