@@ -1,0 +1,18 @@
+<html>
+<head> 
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+<title>Upload Form</title>
+</head>
+<body>
+<p><h1>Select & Upload</h1></p>
+<form enctype="multipart/form-data" action="/jobs" method="post">
+Model:
+<select name="model">
+  <option value="sequencer">Sequencer</option>
+  <option value="networker">Networker</option>
+</select>
+<br />
+File: <input type="file" name="zipfile" />
+<br />
+<input type="submit" value="upload" />
+</form>
