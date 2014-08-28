@@ -3,10 +3,10 @@ import tornado.ioloop
 import tornado.web
 import os, uuid
 
-from tornado.options import define, options, parse_command_line
+# setup config options
+import config
 
-define("port", default=8888, help="run on the given port", type=int)
-define("debug", default=False, help="run in debug mode")
+from tornado.options import parse_command_line, parse_config_file
 
 __JOB_DIR__ = "data/"
 
@@ -42,12 +42,12 @@ class JobHandler(tornado.web.RequestHandler):
 
 if __name__ == "__main__":
     parse_command_line()
+    parse_config_file("config.ini")
     application = tornado.web.Application([
             (r"/jobs/submit", SubmitJobForm),
             (r"/jobs", JobHandler),
-            (r"/data/(.*)",tornado.web.StaticFileHandler, {"path": "./data"},),
             ], 
-            debug=options.debug)
+            debug=config.options.debug)
 
-    application.listen(options.port)
+    application.listen(config.options.port)
     tornado.ioloop.IOLoop.instance().start()
