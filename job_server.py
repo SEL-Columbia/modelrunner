@@ -50,4 +50,9 @@ if __name__ == "__main__":
             debug=config.options.debug)
 
     application.listen(config.options.port)
+
+    # get the command_ keys
+    command_keys = [key for key in config.options.as_dict().keys() if key.startswith("model_command")]
+    comand_dict = {k: config.options.as_dict().get(k, None) for k in command_keys}
+    # TODO:  Setup JobManager with config options and command_dict
     tornado.ioloop.IOLoop.instance().start()
