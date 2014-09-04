@@ -11,10 +11,14 @@ import threading, subprocess
 from zipfile import ZipFile
 
 class WaitForKill(threading.Thread):
+    """
+    Thread to wait for kill messages while process is running
+    """
+
     def __init__(self, redis_obj, worker_queue, popen_proc):
         threading.Thread.__init__(self)
         self.redis_obj = redis_obj 
-        self.worker = worker_queue
+        self.worker_queue = worker_queue
         self.popen_proc = popen_proc
 
     def run(self):
@@ -45,7 +49,7 @@ class JobManager:
             raise ValueError("invalid redis url: %s" % redis_url)
 
         self.rdb = redis.Redis(host=redis_host_match.group(0), 
-                                 port=redis_port_match.group(0))
+                               port=redis_port_match.group(0))
         self.primary_url = primary_url
         self.worker_url = worker_url
         self.model_commands = model_commands
@@ -62,6 +66,9 @@ class JobManager:
     def hget(self, hash_name, key):
         pickled_obj = self.rdb.hget(hash_name, key)
         return pickle.loads(pickled_obj)
+
+    def add_update_job_table(self, job):
+        self.hset("model_runner:jobs", job.uuid, job)
 
     def enqueue(self, job, job_data_blob):
         """ 
@@ -82,17 +89,17 @@ class JobManager:
         job.primary_url = self.primary_url
 
         # add to global job list then queue it to be run
-        self.hset("model_runner:jobs", job.uuid, job)
+        self.add_update_job_table(job)
         job_queue = "model_runner:queues:%s" % job.model
 
         logging.info("adding job %s to queue %s" % (job.uuid, job_queue))
         self.rdb.rpush(job_queue, job.uuid)
 
-    def wait_for_job(self, model_name):
+    def wait_for_new_jobs(self, model_name):
         """ 
         listen for jobs to run as they come in on the model based queue 
         This is meant to be called in an infinite loop as part of a worker.  
-        It blocks while command is being run 
+        It blocks on waiting for job and while command is being run 
         """
         job_queue = "model_runner:queues:%s" % model_name
         logging.info("waiting for job on queue %s" % job_queue)
@@ -109,21 +116,27 @@ class JobManager:
         command = self.model_commands[model_name]
         logging.info("starting job %s" % job.uuid)
         # update job status
-        job.status = RUNNING
+        job.status = JobManager.STATUS_RUNNING
         job.worker_url = self.worker_url
-        self.hset("model_runner:jobs", uuid, job)
+        self.add_update_job_table(job)
 
-        popen_proc = subprocess.Popen(command.split(), shell=True, stdout=job_data_log, stderr=job_data_log)
+        # add the output dir to the command 
+        command_args = command.split()
+        command_args.append(os.path.join(self.data_dir, job.uuid))
+        command_str = subprocess.list2cmdline(command_args)
+        logging.info("running command %s" % command_str)
+        popen_proc = subprocess.Popen(command_str, shell=True, stdout=job_data_log, stderr=job_data_log)
         worker_queue = "model_runner:queues:" + self.worker_url
         wk = WaitForKill(self.rdb, worker_queue, popen_proc)
         wk.start()
 
+        # wait for command to finish or for it to be killed
         return_code = popen_proc.wait()
         logging.info("finished job %s with return code %s" % (job.uuid, return_code))
 
-        if(wk.isAlive()) {
+        if (wk.isAlive()):
             # send a message to stop the wait for kill thread
-            rdb.rpush(worker_queue, "END")
+            self.rdb.rpush(worker_queue, "END")
 
         logging.info("zipping output of job %s" % job.uuid)
         self._prep_output(job)
@@ -131,11 +144,33 @@ class JobManager:
         logging.info("finished processing job and notifying primary server %s" % self.primary_url)
         primary_queue = "model_runner:queues:" + self.primary_url
         # update job status
-        job.status = PROCESSED 
+        job.status = JobManager.STATUS_PROCESSED 
         job.worker_url = self.worker_url
         self.hset("model_runner:jobs", job.uuid, job)
 
-        rdb.rpush(primary_queue, job.uuid)
+        # notify primary server job is done
+        if(not self.worker_is_primary()):
+            rdb.rpush(primary_queue, job.uuid)
+
+
+    def wait_for_finished_jobs(self, model_name):
+        """ 
+        listen for jobs that have finished (by workers)
+        This is meant to be called in an infinite loop as part of a primary server  
+        It blocks while waiting for finished jobs
+        """
+        primary_queue = "model_runner:queues:" + self.primary_url
+        logging.info("waiting for finished jobs on queue %s" % primary_queue)
+        result = self.rdb.blpop(primary_queue)
+        uuid = result[1]
+        job = self.hget("model_runner:jobs", uuid)
+
+        logging.info("job %s finished with status of %s" % (job.uuid, job.status))
+        if(job.status == JobManager.STATUS_PROCESSED and not self.worker_is_primary()):
+            logging.info("retrieving output for job %s" % job.uuid)
+            output_url = job.worker_url + "/" + self.data_dir + "/" + job.uuid + "/output.zip"
+            self._fetch_file_from_url(input_url, job_data_dir)
+
 
     def _prep_input(self, job):
         """ fetch (if needed) and unzip data to appropriate dir """
@@ -165,15 +200,14 @@ class JobManager:
 
         output_zip = ZipFile(os.path.join(job_data_dir, "output.zip"), 'w')
         for output_file in output_files:
-            output_zip.write(output_zip, output_file)
+            output_zip.write(os.path.join(job_data_dir, output_file), arcname=output_file)
 
         output_zip.close()
-
 
     def _fetch_file_from_url(url, destination_dir):
 
         # http://stackoverflow.com/questions/22676/how-do-i-download-a-file-over-http-using-python
-        file_name = url.split('/')[-1] # should be "input.zip"
+        file_name = url.split('/')[-1] 
         u = urllib2.urlopen(url)
         destination_file = os.path.join(destination_dir, file_name)
         f = open(destination_file, 'wb')
@@ -205,7 +239,7 @@ class Job:
     """ Maintain the state of a ModelRunner Job """
     def __init__(self, model):
         self.model = model
-        self.uuid = uuid.uuid4() 
+        self.uuid = str(uuid.uuid4())
         self.created = datetime.datetime.utcnow()
         self.status = JobManager.STATUS_CREATED
 

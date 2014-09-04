@@ -16,6 +16,9 @@ class SubmitJobForm(tornado.web.RequestHandler):
 
 class JobHandler(tornado.web.RequestHandler):
 
+    def initialize(self, data_dir):
+        self.data_dir = data_dir
+
     """
     Store the input file and queue the job
 
@@ -31,7 +34,7 @@ class JobHandler(tornado.web.RequestHandler):
         fname = fileinfo['filename']
         
         job_uuid = str(uuid.uuid4())
-        this_job_dir = os.path.join(__JOB_DIR__,job_uuid)
+        this_job_dir = os.path.join(self.data_dir, job_uuid)
         os.makedirs(this_job_dir)
 
         extn = os.path.splitext(fname)[1]
@@ -45,7 +48,7 @@ if __name__ == "__main__":
     parse_config_file("config.ini")
     application = tornado.web.Application([
             (r"/jobs/submit", SubmitJobForm),
-            (r"/jobs", JobHandler),
+            (r"/jobs", JobHandler, dict(data_dir=config.options.data_dir)),
             ], 
             debug=config.options.debug)
 
