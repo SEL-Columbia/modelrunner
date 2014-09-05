@@ -6,10 +6,11 @@
 <body>
 <p><h1>Select & Upload</h1></p>
 <form enctype="multipart/form-data" action="/jobs" method="post">
+Job Name: <input type="text" name="job_name" />
 Model:
 <select name="model">
   <option value="sequencer">Sequencer</option>
-  <option value="networker">Networker</option>
+  <option value="test">Test</option>
 </select>
 <br />
 File: <input type="file" name="zipfile" />

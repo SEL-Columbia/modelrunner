@@ -1,5 +1,4 @@
 import tornado
-import redis
 
 # setup config options
 import config

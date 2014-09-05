@@ -67,6 +67,14 @@ class JobManager:
         pickled_obj = self.rdb.hget(hash_name, key)
         return pickle.loads(pickled_obj)
 
+    # wrapper for redis to unpickle all
+    def hgetall(self, hash_name):
+        pickled_objs = self.rdb.hgetall(hash_name)
+        return [pickle.loads(pobj[1]) for pobj in pickled_objs.items()]
+
+    def get_jobs(self):
+        return self.hgetall("model_runner:jobs")
+
     def add_update_job_table(self, job):
         self.hset("model_runner:jobs", job.uuid, job)
 

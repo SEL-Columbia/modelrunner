@@ -1,0 +1,13 @@
+### view_jobs.html
+<html>
+  <head>
+    <title>View Jobs</title>
+  </head>
+  <body>
+    <ul>
+      {% for job in jobs %}
+       <li>{{ escape("%s,%s,%s,%s,%s" % (getattr(job, "name", ""), job.uuid, getattr(job, "status", ""), getattr(job, "primary_url", ""), getattr(job, "worker_url", ""))) }}</li>
+      {% end %}
+    </ul>
+  </body>
+</html>

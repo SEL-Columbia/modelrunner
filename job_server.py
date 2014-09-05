@@ -8,7 +8,7 @@ import config
 
 from tornado.options import parse_command_line, parse_config_file
 
-__JOB_DIR__ = "data/"
+import job_manager
 
 class SubmitJobForm(tornado.web.RequestHandler):
     def get(self):
@@ -16,8 +16,8 @@ class SubmitJobForm(tornado.web.RequestHandler):
 
 class JobHandler(tornado.web.RequestHandler):
 
-    def initialize(self, data_dir):
-        self.data_dir = data_dir
+    def initialize(self, job_mgr):
+        self.job_mgr = job_mgr
 
     """
     Store the input file and queue the job
@@ -28,34 +28,48 @@ class JobHandler(tornado.web.RequestHandler):
     """
     def post(self):
         model = self.get_argument('model')
-        fileinfo = self.request.files['zipfile'][0]
-        print "fileinfo is", fileinfo
-        print "model: %s" % model
-        fname = fileinfo['filename']
+        job_name = self.get_argument('job_name')
+        file_info = self.request.files['zipfile'][0]
+        file_name = file_info['filename']
         
-        job_uuid = str(uuid.uuid4())
-        this_job_dir = os.path.join(self.data_dir, job_uuid)
-        os.makedirs(this_job_dir)
+        # create new job
+        job = self.job_mgr.Job(model)
+        job.name = job_name
+        self.job_mgr.enqueue(job, file_info['body'])
+        self.finish("job %s is queued to be run" % job.uuid)
 
-        extn = os.path.splitext(fname)[1]
-        #TODO Check if extn is zip 
-        fh = open(os.path.join(this_job_dir,"input.zip"), 'w')
-        fh.write(fileinfo['body'])
-        self.finish(fname + " is uploaded!! Check %s folder" % this_job_dir)
-
+    """
+    Get the list of jobs
+    """
+    def get(self):
+        jobs =  self.job_mgr.get_jobs()
+        # order descending
+        jobs.sort(key=lambda job: job.created, reverse=True)
+        self.render("view_jobs.html", jobs=jobs)
+       
 if __name__ == "__main__":
+
     parse_command_line()
     parse_config_file("config.ini")
+
+    # get the command_ keys
+    command_dict = config.options.group_dict("model_command")
+
+    jm = job_manager.JobManager(config.options.redis_url, 
+                                config.options.primary_url, 
+                                config.options.worker_url,
+                                config.options.data_dir,
+                                command_dict)
+
+
     application = tornado.web.Application([
             (r"/jobs/submit", SubmitJobForm),
-            (r"/jobs", JobHandler, dict(data_dir=config.options.data_dir)),
+            (r"/jobs", JobHandler, dict(job_mgr=jm)),
             ], 
+            template_path=os.path.join(os.path.dirname(__file__), "templates"),
             debug=config.options.debug)
 
     application.listen(config.options.port)
 
-    # get the command_ keys
-    command_keys = [key for key in config.options.as_dict().keys() if key.startswith("model_command")]
-    comand_dict = {k: config.options.as_dict().get(k, None) for k in command_keys}
     # TODO:  Setup JobManager with config options and command_dict
     tornado.ioloop.IOLoop.instance().start()
