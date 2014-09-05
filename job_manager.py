@@ -85,10 +85,8 @@ class JobManager:
         file_handle.write(job_data_blob)
         file_handle.close()
 
-        # monkey patch server where worker will get data from
-        job.primary_url = self.primary_url
-
         # add to global job list then queue it to be run
+        job.primary_url = self.primary_url
         self.add_update_job_table(job)
         job_queue = "model_runner:queues:%s" % job.model
 
@@ -150,7 +148,7 @@ class JobManager:
 
         # notify primary server job is done
         if(not self.worker_is_primary()):
-            rdb.rpush(primary_queue, job.uuid)
+            self.rdb.rpush(primary_queue, job.uuid)
 
 
     def wait_for_finished_jobs(self, model_name):
@@ -169,17 +167,22 @@ class JobManager:
         if(job.status == JobManager.STATUS_PROCESSED and not self.worker_is_primary()):
             logging.info("retrieving output for job %s" % job.uuid)
             output_url = job.worker_url + "/" + self.data_dir + "/" + job.uuid + "/output.zip"
-            self._fetch_file_from_url(input_url, job_data_dir)
+            self._fetch_file_from_url(output_url, job_data_dir)
 
 
     def _prep_input(self, job):
         """ fetch (if needed) and unzip data to appropriate dir """
         
         job_data_dir = os.path.join(self.data_dir, job.uuid)
+        # create job data dir if it doesn't exist
+        if(not os.path.exists(job_data_dir)):
+            os.mkdir(job_data_dir)
+ 
         input_zip = os.path.join(job_data_dir, "input.zip")
         if not self.worker_is_primary():
             # need to fetch
             input_url = job.primary_url + "/" + self.data_dir + "/" + job.uuid + "/input.zip"
+            logging.info("fetching data from %s" % input_url)
             self._fetch_file_from_url(input_url, job_data_dir)
 
         # if we're here, we just need to unzip the input file
@@ -204,7 +207,7 @@ class JobManager:
 
         output_zip.close()
 
-    def _fetch_file_from_url(url, destination_dir):
+    def _fetch_file_from_url(self, url, destination_dir):
 
         # http://stackoverflow.com/questions/22676/how-do-i-download-a-file-over-http-using-python
         file_name = url.split('/')[-1] 
