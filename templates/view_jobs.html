@@ -1,13 +1,25 @@
-### view_jobs.html
-<html>
-  <head>
-    <title>View Jobs</title>
-  </head>
-  <body>
-    <ul>
-      {% for job in jobs %}
-       <li>{{ escape("%s,%s,%s,%s,%s" % (getattr(job, "name", ""), job.uuid, getattr(job, "status", ""), getattr(job, "primary_url", ""), getattr(job, "worker_url", ""))) }}</li>
-      {% end %}
-    </ul>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block body %}
+<ul class="nav nav-tabs" role="tablist">
+  <li class="active"><a href="/jobs">View</a></li>
+  <li><a href="/jobs/submit">Submit</a></li>
+</ul>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th><th>Model</th><th>Created Date</th><th>Status</th><th>Options</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for job in jobs %}
+      <tr>
+        <td>{{ getattr(job, "name", "") }}</td>
+        <td>{{ getattr(job, "model", "") }}</td>
+        <td>{{ str(getattr(job, "created", "")) }}</td>
+        <td>{{ getattr(job, "status", "") }}</td>
+        <td><a href=kill/123>Kill</a>, <a href=jobs/123.log>Log</a>, <a href=jobs/123.zip>Download</a></td>
+      </tr>
+    {% end %}
+  </tbody>
+</table>
+{% end %}

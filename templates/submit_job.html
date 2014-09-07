@@ -1,19 +1,29 @@
-<html>
-<head> 
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
-<title>Upload Form</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block body %}
+<ul class="nav nav-tabs" role="tablist">
+  <li><a href="/jobs">View</a></li>
+  <li class="active"><a href="/jobs/submit">Submit</a></li>
+</ul>
 <p><h1>Select & Upload</h1></p>
 <form enctype="multipart/form-data" action="/jobs" method="post">
-Job Name: <input type="text" name="job_name" />
-Model:
-<select name="model">
-  <option value="sequencer">Sequencer</option>
-  <option value="test">Test</option>
-</select>
-<br />
-File: <input type="file" name="zipfile" />
-<br />
-<input type="submit" value="upload" />
+  <div class="form-group">
+  <label for="job_name">Job Name</label>
+  <input type="text" id="job_name" name="job_name" placeholder="your job name"/>
+  </div>
+  <div class="form-group">
+  <label for="model">Model</label> 
+  <select name="model" id="model">
+    <option value="sequencer">Sequencer</option>
+    <option value="test">Test</option>
+  </select>
+  </div>
+  <div class="form-group">
+  <label for="zip_file">Input File</label>
+  <input type="file" name="zip_file" id="zip_file"/>
+  </div>
+  <div class="form-group">
+  <button type="submit" class="btn btn-primary">Submit</button>
+  </div>
 </form>
+{% end %}
+

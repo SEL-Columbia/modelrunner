@@ -29,11 +29,11 @@ class JobHandler(tornado.web.RequestHandler):
     def post(self):
         model = self.get_argument('model')
         job_name = self.get_argument('job_name')
-        file_info = self.request.files['zipfile'][0]
+        file_info = self.request.files['zip_file'][0]
         file_name = file_info['filename']
         
         # create new job
-        job = self.job_mgr.Job(model)
+        job = job_manager.Job(model)
         job.name = job_name
         self.job_mgr.enqueue(job, file_info['body'])
         self.finish("job %s is queued to be run" % job.uuid)
