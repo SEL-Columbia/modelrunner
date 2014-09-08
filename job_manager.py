@@ -75,6 +75,9 @@ class JobManager:
     def get_jobs(self):
         return self.hgetall("model_runner:jobs")
 
+    def get_job(self, job_uuid):
+        return self.hget("model_runner:jobs", job_uuid)
+
     def add_update_job_table(self, job):
         self.hset("model_runner:jobs", job.uuid, job)
 
@@ -95,6 +98,7 @@ class JobManager:
 
         # add to global job list then queue it to be run
         job.primary_url = self.primary_url
+        job.data_dir = self.data_dir # so we know where to get output.zip from
         self.add_update_job_table(job)
         job_queue = "model_runner:queues:%s" % job.model
 
@@ -144,14 +148,17 @@ class JobManager:
             # send a message to stop the wait for kill thread
             self.rdb.rpush(worker_queue, "END")
 
-        logging.info("zipping output of job %s" % job.uuid)
-        self._prep_output(job)
-
         logging.info("finished processing job and notifying primary server %s" % self.primary_url)
         primary_queue = "model_runner:queues:" + self.primary_url
-        # update job status
-        job.status = JobManager.STATUS_PROCESSED 
-        job.worker_url = self.worker_url
+
+        # update job status (use command return code for now)
+        if(return_code == 0):  
+            logging.info("zipping output of job %s" % job.uuid)
+            self._prep_output(job)
+            job.status = JobManager.STATUS_PROCESSED 
+        else:
+            job.status = JobManager.STATUS_FAILED
+
         self.hset("model_runner:jobs", job.uuid, job)
 
         # notify primary server job is done
@@ -172,17 +179,26 @@ class JobManager:
         job = self.hget("model_runner:jobs", uuid)
 
         logging.info("job %s finished with status of %s" % (job.uuid, job.status))
-        if(job.status == JobManager.STATUS_PROCESSED and not self.worker_is_primary()):
-            logging.info("retrieving output for job %s" % job.uuid)
-            output_url = job.worker_url + "/" + self.data_dir + "/" + job.uuid + "/output.zip"
-            job_data_dir = os.path.join(self.data_dir, job.uuid)
-            if(not os.path.exists(job_data_dir)):
-                os.mkdir(job_data_dir)
-     
-            self._fetch_file_from_url(output_url, job_data_dir)
+        if(job.status == JobManager.STATUS_PROCESSED):
+            if(not self.worker_is_primary()): # need to get output
+                logging.info("retrieving output for job %s" % job.uuid)
+                output_url = job.worker_url + "/" + self.data_dir + "/" + job.uuid + "/output.zip"
+                job_data_dir = os.path.join(self.data_dir, job.uuid)
+                if(not os.path.exists(job_data_dir)):
+                    os.mkdir(job_data_dir)
+         
+                self._fetch_file_from_url(output_url, job_data_dir)
+                
             job.status = JobManager.STATUS_COMPLETE
             self.hset("model_runner:jobs", job.uuid, job)
 
+    def kill_job(self, job):
+        """
+        Notify job worker that the job should be killed
+        """
+        worker_queue = "model_runner:queues:" + job.worker_url
+        logging.info("sending message to kill job on %s" % job.worker_url)
+        self.rdb.rpush(worker_queue, "KILL")
 
     def _prep_input(self, job):
         """ fetch (if needed) and unzip data to appropriate dir """

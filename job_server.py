@@ -16,15 +16,20 @@ class SubmitJobForm(tornado.web.RequestHandler):
 
 class JobOptionsModule(tornado.web.UIModule):
 
+    def get_data_dir(self, job):
+        if(getattr(job, "data_dir", False)):
+                return job.data_dir
+        return "data"
+
     def kill_url(self, job):
-        return "kill/" + job.uuid
+        return "jobs/" + job.uuid + "/kill"
 
     def log_url(self, job):
         # TODO:  Make data dir based on options config
-        return job.worker_url + "/data/" + job.uuid + ".log"
+        return job.worker_url + "/" + self.get_data_dir(job) + "/" + job.uuid + ".log"
 
     def download_url(self, job):
-        return job.primary_url + "/data/" + job.uuid + "/output.zip"
+        return job.primary_url + "/" + self.get_data_dir(job) + "/" + job.uuid + "/output.zip"
 
     def render(self, job):
         href_templ = "<a href=%s>%s</a>" 
@@ -38,8 +43,26 @@ class JobOptionsModule(tornado.web.UIModule):
            dload_option = href_templ % (self.download_url(job), "Download")
            return "%s,%s" % (log_option, dload_option)
 
+        if job.status == job_manager.JobManager.STATUS_FAILED:
+           log_option = href_templ % (self.log_url(job), "Log")
+           return log_option
+
         return ""
         
+
+class JobKillHandler(tornado.web.RequestHandler):
+
+    def initialize(self, job_mgr):
+        self.job_mgr = job_mgr
+
+    """
+    Kill the designated job
+    """
+    def get(self, job_uuid):
+        job =  self.job_mgr.get_job(job_uuid)
+        self.job_mgr.kill_job(job)
+        self.redirect("/jobs")
+
 class JobHandler(tornado.web.RequestHandler):
 
     def initialize(self, job_mgr):
@@ -62,7 +85,7 @@ class JobHandler(tornado.web.RequestHandler):
         job = job_manager.Job(model)
         job.name = job_name
         self.job_mgr.enqueue(job, file_info['body'])
-        self.finish("job %s is queued to be run" % job.uuid)
+        self.redirect("/jobs")
 
     """
     Get the list of jobs
@@ -91,6 +114,7 @@ if __name__ == "__main__":
     application = tornado.web.Application([
             (r"/jobs/submit", SubmitJobForm),
             (r"/jobs", JobHandler, dict(job_mgr=jm)),
+            (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill", JobKillHandler, dict(job_mgr=jm)),
             ], 
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             debug=config.options.debug, 
