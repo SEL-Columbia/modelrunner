@@ -14,6 +14,32 @@ class SubmitJobForm(tornado.web.RequestHandler):
     def get(self):
         self.render("submit_job.html")
 
+class JobOptionsModule(tornado.web.UIModule):
+
+    def kill_url(self, job):
+        return "kill/" + job.uuid
+
+    def log_url(self, job):
+        # TODO:  Make data dir based on options config
+        return job.worker_url + "/data/" + job.uuid + ".log"
+
+    def download_url(self, job):
+        return job.primary_url + "/data/" + job.uuid + "/output.zip"
+
+    def render(self, job):
+        href_templ = "<a href=%s>%s</a>" 
+        if job.status == job_manager.JobManager.STATUS_RUNNING:
+           log_option = href_templ % (self.log_url(job), "Log")
+           kill_option = href_templ % (self.kill_url(job), "Kill")
+           return "%s,%s" % (log_option, kill_option)
+
+        if job.status == job_manager.JobManager.STATUS_COMPLETE:
+           log_option = href_templ % (self.log_url(job), "Log")
+           dload_option = href_templ % (self.download_url(job), "Download")
+           return "%s,%s" % (log_option, dload_option)
+
+        return ""
+        
 class JobHandler(tornado.web.RequestHandler):
 
     def initialize(self, job_mgr):
@@ -67,7 +93,9 @@ if __name__ == "__main__":
             (r"/jobs", JobHandler, dict(job_mgr=jm)),
             ], 
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
-            debug=config.options.debug)
+            debug=config.options.debug, 
+            ui_modules={'JobOptions': JobOptionsModule}
+            )
 
     application.listen(config.options.port)
 

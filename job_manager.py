@@ -159,7 +159,7 @@ class JobManager:
             self.rdb.rpush(primary_queue, job.uuid)
 
 
-    def wait_for_finished_jobs(self, model_name):
+    def wait_for_finished_jobs(self):
         """ 
         listen for jobs that have finished (by workers)
         This is meant to be called in an infinite loop as part of a primary server  
@@ -175,7 +175,13 @@ class JobManager:
         if(job.status == JobManager.STATUS_PROCESSED and not self.worker_is_primary()):
             logging.info("retrieving output for job %s" % job.uuid)
             output_url = job.worker_url + "/" + self.data_dir + "/" + job.uuid + "/output.zip"
+            job_data_dir = os.path.join(self.data_dir, job.uuid)
+            if(not os.path.exists(job_data_dir)):
+                os.mkdir(job_data_dir)
+     
             self._fetch_file_from_url(output_url, job_data_dir)
+            job.status = JobManager.STATUS_COMPLETE
+            self.hset("model_runner:jobs", job.uuid, job)
 
 
     def _prep_input(self, job):

@@ -18,7 +18,7 @@ if __name__ == "__main__":
                                 config.options.data_dir,
                                 command_dict)
 
-    # continuously wait for jobs
+    # continuously wait for jobs to complete
     while(True):
-        jm.wait_for_new_jobs(config.options.model)
+        jm.wait_for_finished_jobs()
 

@@ -17,7 +17,7 @@
         <td>{{ getattr(job, "model", "") }}</td>
         <td>{{ str(getattr(job, "created", "")) }}</td>
         <td>{{ getattr(job, "status", "") }}</td>
-        <td><a href=kill/123>Kill</a>, <a href=jobs/123.log>Log</a>, <a href=jobs/123.zip>Download</a></td>
+        <td>{% module JobOptions(job) %}</td>
       </tr>
     {% end %}
   </tbody>
