@@ -12,8 +12,12 @@ from tornado.options import parse_command_line, parse_config_file
 import job_manager
 
 class SubmitJobForm(tornado.web.RequestHandler):
+
+    def initialize(self, models):
+        self.models = models
+
     def get(self):
-        self.render("submit_job.html")
+        self.render("submit_job.html", models=self.models)
 
 class JobOptionsModule(tornado.web.UIModule):
 
@@ -104,6 +108,7 @@ if __name__ == "__main__":
 
     # get the command_ keys
     command_dict = config.options.group_dict("model_command")
+    models = command_dict.keys()
 
     jm = job_manager.JobManager(config.options.redis_url, 
                                 config.options.primary_url, 
@@ -113,7 +118,7 @@ if __name__ == "__main__":
 
 
     application = tornado.web.Application([
-            (r"/jobs/submit", SubmitJobForm),
+            (r"/jobs/submit", SubmitJobForm, dict(models=models)),
             (r"/jobs", JobHandler, dict(job_mgr=jm)),
             (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill", JobKillHandler, dict(job_mgr=jm)),
             ], 

@@ -12,8 +12,9 @@
   <div class="form-group">
   <label for="model">Model</label> 
   <select name="model" id="model">
-    <option value="sequence">Sequence</option>
-    <option value="test">Test</option>
+    {% for model in models %}
+      <option value="{{model}}">{{model}}</option>
+    {% end %}
   </select>
   </div>
   <div class="form-group">
