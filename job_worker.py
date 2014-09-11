@@ -16,7 +16,8 @@ if __name__ == "__main__":
                                 config.options.primary_url, 
                                 config.options.worker_url,
                                 config.options.data_dir,
-                                command_dict)
+                                command_dict,
+                                config.options.worker_is_primary)
 
     # continuously wait for jobs
     while(True):
