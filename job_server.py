@@ -2,6 +2,7 @@ import tornado
 import tornado.ioloop
 import tornado.web
 import os, uuid
+import StringIO
 
 # setup config options
 import config
@@ -26,7 +27,7 @@ class JobOptionsModule(tornado.web.UIModule):
 
     def log_url(self, job):
         # TODO:  Make data dir based on options config
-        return job.worker_url + "/" + self.get_data_dir(job) + "/" + job.uuid + ".log"
+        return job.worker_url + "/" + self.get_data_dir(job) + "/" + job.uuid + "/job.log"
 
     def download_url(self, job):
         return job.primary_url + "/" + self.get_data_dir(job) + "/" + job.uuid + "/output.zip"
@@ -84,7 +85,7 @@ class JobHandler(tornado.web.RequestHandler):
         # create new job
         job = job_manager.Job(model)
         job.name = job_name
-        self.job_mgr.enqueue(job, file_info['body'])
+        self.job_mgr.enqueue(job, file_info["body"])
         self.redirect("/jobs")
 
     """

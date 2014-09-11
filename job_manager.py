@@ -8,7 +8,47 @@ import pickle
 import logging
 import urllib2
 import threading, subprocess
+import zipfile
 from zipfile import ZipFile
+
+# utility functions
+def fetch_file_from_url(url, destination_dir):
+
+    # http://stackoverflow.com/questions/22676/how-do-i-download-a-file-over-http-using-python
+    file_name = url.split('/')[-1] 
+    u = urllib2.urlopen(url)
+    destination_file = os.path.join(destination_dir, file_name)
+    f = open(destination_file, 'wb')
+    meta = u.info()
+    file_size = int(meta.getheaders("Content-Length")[0])
+    logging.info("Downloading: %s Bytes: %s" % (file_name, file_size))
+
+    file_size_dl = 0
+    block_sz = 8192
+    while True:
+        buffer = u.read(block_sz)
+        if not buffer:
+            break
+
+        file_size_dl += len(buffer)
+        f.write(buffer)
+        status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+        status = status + chr(8)*(len(status)+1)
+        logging.info(status)
+
+    f.close()
+
+def zipdir(path, zip_file_name):
+
+    output_zip = ZipFile(zip_file_name, 'w')
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            rel_path = os.path.relpath(os.path.join(root, file), path)
+            output_zip.write(os.path.join(root, file), arcname=rel_path, compress_type=zipfile.ZIP_DEFLATED)
+
+    output_zip.close()
+
+
 
 class WaitForKill(threading.Thread):
     """
@@ -40,7 +80,7 @@ class JobManager:
     STATUS_FAILED    = "FAILED"
 
     """ Manage running and syncing job data between primary and workers """
-    def __init__(self, redis_url, primary_url, worker_url, data_dir, model_commands):
+    def __init__(self, redis_url, primary_url, worker_url, data_dir, model_commands, worker_is_primary=True):
         port_re = re.compile(r'(?<=:)\d+$')
         host_re = re.compile(r'^.*(?=:\d+$)')
         redis_host_match = host_re.search(redis_url)
@@ -53,6 +93,7 @@ class JobManager:
         self.primary_url = primary_url
         self.worker_url = worker_url
         self.model_commands = model_commands
+        self._worker_is_primary = worker_is_primary
         if(not os.path.exists(data_dir)):
             os.mkdir(data_dir)
         self.data_dir = data_dir
@@ -92,7 +133,7 @@ class JobManager:
             os.mkdir(job_data_dir)
         
         logging.info("writing input file for job %s to %s" % (job.uuid, job_data_dir))
-        file_handle = open(os.path.join(job_data_dir, "input.zip"), "w")
+        file_handle = open(os.path.join(job_data_dir, "input.zip"), 'wb')
         file_handle.write(job_data_blob)
         file_handle.close()
 
@@ -117,12 +158,22 @@ class JobManager:
         uuid = result[1]
         job = self.hget("model_runner:jobs", uuid)
 
+        job_data_dir = os.path.join(self.data_dir, job.uuid)
+        input_dir = os.path.join(job_data_dir, "input")
+        output_dir = os.path.join(job_data_dir, "output")
+        # create job data dirs if they don't exist
+        if(not os.path.exists(input_dir)):
+            os.makedirs(input_dir)
+
+        if(not os.path.exists(output_dir)):
+            os.makedirs(output_dir)
+ 
         logging.info("preparing input for job %s" % job.uuid)
         self._prep_input(job)
 
         # setup subproc to run model command and output to local job log
         # AND the associated 'kill thread'
-        job_data_log = open(os.path.join(self.data_dir, job.uuid + ".log"), 'w')
+        job_data_log = open(os.path.join(job_data_dir, "job.log"), 'w')
         command = self.model_commands[model_name]
         logging.info("starting job %s" % job.uuid)
         # update job status
@@ -130,9 +181,12 @@ class JobManager:
         job.worker_url = self.worker_url
         self.add_update_job_table(job)
 
-        # add the output dir to the command 
+        # add the input and output dir to the command 
         command_args = command.split()
-        command_args.append(os.path.join(self.data_dir, job.uuid))
+        input_dir = os.path.join(self.data_dir, job.uuid, "input")
+        output_dir = os.path.join(self.data_dir, job.uuid, "output")
+        command_args.append(os.path.realpath(input_dir))
+        command_args.append(os.path.realpath(output_dir))
         command_str = subprocess.list2cmdline(command_args)
         logging.info("running command %s" % command_str)
         popen_proc = subprocess.Popen(command_str, shell=True, stdout=job_data_log, stderr=job_data_log)
@@ -142,6 +196,8 @@ class JobManager:
 
         # wait for command to finish or for it to be killed
         return_code = popen_proc.wait()
+        # close job log
+        job_data_log.close()
         logging.info("finished job %s with return code %s" % (job.uuid, return_code))
 
         if (wk.isAlive()):
@@ -162,8 +218,7 @@ class JobManager:
         self.hset("model_runner:jobs", job.uuid, job)
 
         # notify primary server job is done
-        if(not self.worker_is_primary()):
-            self.rdb.rpush(primary_queue, job.uuid)
+        self.rdb.rpush(primary_queue, job.uuid)
 
 
     def wait_for_finished_jobs(self):
@@ -187,7 +242,7 @@ class JobManager:
                 if(not os.path.exists(job_data_dir)):
                     os.mkdir(job_data_dir)
          
-                self._fetch_file_from_url(output_url, job_data_dir)
+                fetch_file_from_url(output_url, job_data_dir)
                 
             job.status = JobManager.STATUS_COMPLETE
             self.hset("model_runner:jobs", job.uuid, job)
@@ -204,68 +259,32 @@ class JobManager:
         """ fetch (if needed) and unzip data to appropriate dir """
         
         job_data_dir = os.path.join(self.data_dir, job.uuid)
-        # create job data dir if it doesn't exist
-        if(not os.path.exists(job_data_dir)):
-            os.mkdir(job_data_dir)
- 
+        input_dir = os.path.join(job_data_dir, "input")
+
         input_zip = os.path.join(job_data_dir, "input.zip")
         if not self.worker_is_primary():
             # need to fetch
             input_url = job.primary_url + "/" + self.data_dir + "/" + job.uuid + "/input.zip"
             logging.info("fetching data from %s" % input_url)
-            self._fetch_file_from_url(input_url, job_data_dir)
+            fetch_file_from_url(input_url, job_data_dir)
 
         # if we're here, we just need to unzip the input file
         with ZipFile(input_zip, 'r') as zip_file:
-            zip_file.extractall(job_data_dir)
+            zip_file.extractall(input_dir)
 
     def _prep_output(self, job):
-        """ zip files that were not in the input into the output file """
+        """ zip files in the output dir """
         
         job_data_dir = os.path.join(self.data_dir, job.uuid)
-        input_zip = ZipFile(os.path.join(job_data_dir, "input.zip"), 'r')
-        input_files = [zipinfo.filename for zipinfo in input_zip.infolist()]
-        input_files.append("input.zip")
+        output_zip_name = os.path.join(job_data_dir, "output.zip")
 
-        all_files = os.listdir(job_data_dir)
+        output_dir = os.path.join(job_data_dir, "output")
+        zipdir(output_dir, output_zip_name)
 
-        output_files = set(all_files) - set(input_files)
-
-        output_zip = ZipFile(os.path.join(job_data_dir, "output.zip"), 'w')
-        for output_file in output_files:
-            output_zip.write(os.path.join(job_data_dir, output_file), arcname=output_file)
-
-        output_zip.close()
-
-    def _fetch_file_from_url(self, url, destination_dir):
-
-        # http://stackoverflow.com/questions/22676/how-do-i-download-a-file-over-http-using-python
-        file_name = url.split('/')[-1] 
-        u = urllib2.urlopen(url)
-        destination_file = os.path.join(destination_dir, file_name)
-        f = open(destination_file, 'wb')
-        meta = u.info()
-        file_size = int(meta.getheaders("Content-Length")[0])
-        logging.info("Downloading: %s Bytes: %s" % (file_name, file_size))
-
-        file_size_dl = 0
-        block_sz = 8192
-        while True:
-            buffer = u.read(block_sz)
-            if not buffer:
-                break
-
-            file_size_dl += len(buffer)
-            f.write(buffer)
-            status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
-            status = status + chr(8)*(len(status)+1)
-            logging.info(status)
-
-        f.close()
 
     # whether the machine this is running on is also primary  
     def worker_is_primary(self):
-        return self.primary_url == self.worker_url
+        return self._worker_is_primary
 
 class Job:
 
