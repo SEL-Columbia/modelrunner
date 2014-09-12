@@ -156,7 +156,12 @@ class JobManager:
         logging.info("waiting for job on queue %s" % job_queue)
         result = self.rdb.blpop(job_queue)
         uuid = result[1]
-        job = self.hget("model_runner:jobs", uuid)
+        job = self.get_job(uuid)
+        
+        # assign the job to this worker
+        job.worker_url = self.worker_url
+        # primary_queue to notify primary server of any errors or completion
+        primary_queue = "model_runner:queues:" + self.primary_url
 
         job_data_dir = os.path.join(self.data_dir, job.uuid)
         input_dir = os.path.join(job_data_dir, "input")
@@ -168,17 +173,32 @@ class JobManager:
         if(not os.path.exists(output_dir)):
             os.makedirs(output_dir)
  
-        logging.info("preparing input for job %s" % job.uuid)
-        self._prep_input(job)
-
         # setup subproc to run model command and output to local job log
         # AND the associated 'kill thread'
+        logging.info("preparing input for job %s" % job.uuid)
         job_data_log = open(os.path.join(job_data_dir, "job_log.txt"), 'w')
+        
+        # catch data prep exceptions so that if the job fails, we don't
+        # kill the worker
+        try:
+            self._prep_input(job)
+        except Exception, e:
+            # Fail the job, log it, notify primary and get outta here
+            failure_msg = "Failed prepping data: %s" % e
+            logging.info(failure_msg)
+            job_data_log.write(failure_msg)
+            job.status = JobManager.STATUS_FAILED
+            self.hset("model_runner:jobs", job.uuid, job)
+            self.rdb.rpush(primary_queue, job.uuid)
+            job_data_log.close()
+            return
+
+
+        # Input has been prepped so start the job 
         command = self.model_commands[model_name]
         logging.info("starting job %s" % job.uuid)
         # update job status
         job.status = JobManager.STATUS_RUNNING
-        job.worker_url = self.worker_url
         self.add_update_job_table(job)
 
         # add the input and output dir to the command 
@@ -205,7 +225,6 @@ class JobManager:
             self.rdb.rpush(worker_queue, "END")
 
         logging.info("finished processing job and notifying primary server %s" % self.primary_url)
-        primary_queue = "model_runner:queues:" + self.primary_url
 
         # update job status (use command return code for now)
         if(return_code == 0):  
