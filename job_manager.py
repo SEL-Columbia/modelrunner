@@ -173,7 +173,7 @@ class JobManager:
 
         # setup subproc to run model command and output to local job log
         # AND the associated 'kill thread'
-        job_data_log = open(os.path.join(job_data_dir, "job.log"), 'w')
+        job_data_log = open(os.path.join(job_data_dir, "job_log.txt"), 'w')
         command = self.model_commands[model_name]
         logging.info("starting job %s" % job.uuid)
         # update job status

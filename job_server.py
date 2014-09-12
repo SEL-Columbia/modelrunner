@@ -31,7 +31,7 @@ class JobOptionsModule(tornado.web.UIModule):
 
     def log_url(self, job):
         # TODO:  Make data dir based on options config
-        return job.worker_url + "/" + self.get_data_dir(job) + "/" + job.uuid + "/job.log"
+        return job.worker_url + "/" + self.get_data_dir(job) + "/" + job.uuid + "/job_log.txt"
 
     def download_url(self, job):
         return job.primary_url + "/" + self.get_data_dir(job) + "/" + job.uuid + "/output.zip"
