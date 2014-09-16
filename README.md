@@ -22,43 +22,40 @@ Components
 
 
 
-REST API (Primary and Worker Servers)
+API (Primary Server)
 --------
 
-- /submit (Primary only)
+- /jobs (post)
 
-    Post a job (input as zip, model, email)
+    Post a job (input as name, model, zip)
 
-- /get (Primary only)
+- /jobs (get)
 
-    Get output of completed job (output as zip, json?)
+    Get all jobs (as a view for now)
 
-- /view
+- /jobs/<id>/kill
 
-    All (view list of jobs) or specific job (job log)
-
-- /stop
-
-    Stop a running job
+    Kill a running job
 
 
 Worker Process
 --------------
 
-Workers implement 3 basic methods:
+Workers wait on 2 queues:
 
-- get 
+1.  model_runner:queues:<model>
 
-Workers will poll Primary for job assignment via database lookup of "New" jobs, which
-then become "Assigned".  They then attempt to retrieve the input data to run locally.  
+  This is where it waits for jobs to run a specific model
 
-- run
+2.  model_runner:queues:<worker_id>
 
-Once job data has been retrieved, the job model is looked up and run against the input
+  This is where it waits for a job to be killed
 
-- finish
+Additionally, the Primary waits on a queue:
 
-Post the output and notify Primary that the job is complete
+- model_runner:queues:<primary_id>
+
+  This is where it waits to be notified of a finished job
 
 Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
 
