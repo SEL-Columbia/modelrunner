@@ -43,7 +43,7 @@ Worker Process
 
 Workers wait on 2 queues:
 
-1.  model_runner:queues:<model>
+1.  model_runner:queues:&lt;model&gt;
 
   This is where it waits for jobs to run a specific model
 
