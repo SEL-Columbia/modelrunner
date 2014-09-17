@@ -34,12 +34,12 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="2558"
+     inkscape:window-width="1278"
      inkscape:window-height="1422"
      id="namedview3065"
      showgrid="false"
      inkscape:zoom="2.2566667"
-     inkscape:cx="450"
+     inkscape:cx="603.94387"
      inkscape:cy="234"
      inkscape:window-x="0"
      inkscape:window-y="16"
@@ -67,8 +67,8 @@
        id="rect2991"
        style="fill:#ffffff;stroke:#000000;stroke-width:1" />
     <rect
-       x="587.58789"
-       y="105.27623"
+       x="589.58789"
+       y="97.27623"
        width="265"
        height="303.94388"
        pointer-events="none"
@@ -120,8 +120,8 @@
        id="rect3237"
        width="169.27623"
        height="132.05318"
-       x="28.303543"
-       y="62.920982" />
+       x="42.303543"
+       y="82.920982" />
     <g
        transform="translate(3,256)"
        id="g3007">
@@ -137,15 +137,33 @@
              style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 266px; white-space: normal;">HTTP Based Server<xhtml:br />
 <xhtml:br />
 
+
+
+
 *API*<xhtml:br />
+
+
+
 
 - submit(inputs, parameters, model)<xhtml:br />
 
+
+
+
 - view([job])<xhtml:br />
+
+
+
 
 - register(server)*<xhtml:br />
 
+
+
+
 - dequeue(worker)<xhtml:br />
+
+
+
 
 - update(job, status)<xhtml:br />
 </xhtml:div>
@@ -307,7 +325,7 @@
        xml:space="preserve"
        id="flowRoot3953"
        style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
-       transform="translate(29.632939,-144.51772)"><flowRegion
+       transform="translate(43.632939,-124.51772)"><flowRegion
          id="flowRegion3955"><rect
            id="rect3957"
            width="286.14233"
@@ -324,7 +342,7 @@
        xml:space="preserve"
        id="flowRoot3989"
        style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
-       transform="translate(38.441905,-157.57433)"><flowRegion
+       transform="translate(38.441905,-149.57433)"><flowRegion
          id="flowRegion3991"><rect
            id="rect3993"
            width="115.3558"
@@ -346,14 +364,14 @@
        xml:space="preserve"
        id="flowRoot4047"
        style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
-       transform="translate(61.538404,-143.63147)"><flowRegion
+       transform="translate(61.538404,-147.63147)"><flowRegion
          id="flowRegion4049"><rect
            id="rect4051"
            width="145.79025"
            height="25.258493"
            x="606.64697"
            y="169.77252" /></flowRegion><flowPara
-         id="flowPara4053">Worker</flowPara></flowRoot>    <flowRoot
+         id="flowPara4053">Worker(s)</flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot3221"
        style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
@@ -369,13 +387,13 @@
        id="rect3237-2"
        width="169.27623"
        height="34.121124"
-       x="28.554646"
-       y="341.27252" />
+       x="42.554646"
+       y="361.27252" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot4007"
        style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
-       transform="translate(1.5,143.5)"><flowRegion
+       transform="translate(15.5,163.5)"><flowRegion
          id="flowRegion4009"><rect
            id="rect4011"
            width="167.06056"
@@ -387,8 +405,8 @@
        id="rect3237-9"
        width="169.27623"
        height="75.332352"
-       x="28.49556"
-       y="228.4099" />
+       x="42.49556"
+       y="248.4099" />
     <g
        id="g4048"
        transform="matrix(1.4208973,0,0,1.3493012,-88.730223,-159.94428)">
@@ -427,7 +445,7 @@
        xml:space="preserve"
        id="flowRoot4148"
        style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
-       transform="translate(-3.1587887,15.511817)"><flowRegion
+       transform="translate(10.841211,35.511817)"><flowRegion
          id="flowRegion4150"><rect
            id="rect4152"
            width="195.86411"
@@ -542,8 +560,8 @@
            x="346.97192"
            y="120.58494" /></flowRegion><flowPara
          id="flowPara4361">Redis</flowPara><flowPara
-         id="flowPara4363">- jobs (list)</flowPara><flowPara
-         id="flowPara4365">- queues</flowPara><flowPara
+         id="flowPara4363">- jobs (hash)</flowPara><flowPara
+         id="flowPara4365">- queues (lists)</flowPara><flowPara
          id="flowPara4367">  :primary</flowPara><flowPara
          id="flowPara4369">  :worker&lt;n&gt;</flowPara><flowPara
          id="flowPara4371">  :models:&lt;n&gt;</flowPara></flowRoot>  </g>
