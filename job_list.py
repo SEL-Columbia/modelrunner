@@ -1,4 +1,6 @@
 import tornado
+import csv
+import sys
 
 # setup config options
 import config
@@ -18,8 +20,12 @@ if __name__ == "__main__":
                                 config.options.data_dir,
                                 command_dict,
                                 config.options.worker_is_primary)
-
-    # continuously wait for jobs to complete
-    while(True):
-        jm.wait_for_finished_jobs()
-
+    jobs =  jm.get_jobs()
+    if(len(jobs) > 0):
+        # order descending
+        jobs.sort(key=lambda job: job.created, reverse=True)
+        job_dicts = [job.__dict__ for job in jobs]
+        job_keys = job_dicts[0].keys()
+        dict_writer = csv.DictWriter(sys.stdout, job_keys)
+        dict_writer.writer.writerow(job_keys)
+        dict_writer.writerows(job_dicts)

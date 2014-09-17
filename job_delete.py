@@ -1,4 +1,5 @@
 import tornado
+import sys
 
 # setup config options
 import config
@@ -19,7 +20,6 @@ if __name__ == "__main__":
                                 command_dict,
                                 config.options.worker_is_primary)
 
-    # continuously wait for jobs to complete
-    while(True):
-        jm.wait_for_finished_jobs()
+    for uuid in [l.rstrip() for l in sys.stdin.readlines()]:
+        jm.rdb.hdel("model_runner:jobs", uuid)
 
