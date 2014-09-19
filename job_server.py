@@ -1,28 +1,28 @@
+import os, uuid
+import StringIO
+from urlparse import urlparse
+
 import tornado
 import tornado.ioloop
 import tornado.web
-import os, uuid
-import StringIO
+import tornado.escape
+import tornado.gen
+from tornado.options import parse_command_line, parse_config_file
+from concurrent.futures import ThreadPoolExecutor
 
 # setup config options
 import config
-
-from tornado.options import parse_command_line, parse_config_file
-
 import job_manager
 
-import tornado.escape
- 
+THREAD_POOL = ThreadPoolExecutor(4)
 # For error messages
 class FlashMessageMixin(object):
     def set_flash_message(self, key, message):
-        if not isinstance(message, basestring):
-            message = tornado.escape.json_encode(message)
-                                
-        self.set_cookie('flash_msg_%s' % key, message)
+        message = tornado.escape.json_encode(message)
+        self.set_secure_cookie('flash_msg_%s' % key, message)
                                             
     def get_flash_message(self, key):
-        val = self.get_cookie('flash_msg_%s' % key)
+        val = self.get_secure_cookie('flash_msg_%s' % key)
         self.clear_cookie('flash_msg_%s' % key)
                                                                         
         if val is not None:
@@ -100,14 +100,16 @@ class JobHandler(tornado.web.RequestHandler, FlashMessageMixin):
     def initialize(self, job_mgr):
         self.job_mgr = job_mgr
 
-    """
-    Store the input file and queue the job
-
-    TODO:  
-    - Allow URL based job input
-    - Handle exceptions
-    """
+    @tornado.gen.coroutine
     def post(self):
+        """
+        Store the input file and queue the job
+
+        TODO:  
+        - Allow URL based job input
+        - Handle exceptions
+        """
+
         model = self.get_argument('model')
         job_name = self.get_argument('job_name')
          # create new job
@@ -121,13 +123,29 @@ class JobHandler(tornado.web.RequestHandler, FlashMessageMixin):
 
         # add job to queue and list
         if(file_url):
-            self.job_mgr.enqueue(job, job_data_url=file_url)
+            parsed = urlparse(file_url)
+            if(not parsed.scheme):
+                self.set_flash_message('error', "Invalid url (needs a scheme...i.e. http://)")
+                self.redirect('/jobs/submit')
+
+            # self.job_mgr.enqueue(job, job_data_url=file_url)
+            # don't block
+            # yield tornado.gen.Task(self.enqueue, job, job_data_url=file_url)
+            yield THREAD_POOL.submit(self.job_mgr.enqueue, job, job_data_url=file_url)
+
         else: 
             file_info = self.request.files['zip_file'][0]
             file_name = file_info['filename']
-            self.job_mgr.enqueue(job, job_data_blob=file_info['body'])
+            # self.job_mgr.enqueue(job, job_data_blob=file_info['body'])
+            # don't block
+            # yield tornado.gen.Task(self.enqueue, job, job_data_blob=file_info['body'])
+            yield THREAD_POOL.submit(self.job_mgr.enqueue, job, job_data_blob=file_info['body'])
        
         self.redirect("/jobs")
+
+    def enqueue(self, job, job_data_blob=None, job_data_url=None, callback=None):
+            self.job_mgr.enqueue(job, job_data_blob=job_data_blob, job_data_url=job_data_url)
+            return callback()# tornado coroutine yield seems to want a return val
 
     """
     Get the list of jobs
@@ -154,6 +172,9 @@ if __name__ == "__main__":
                                 command_dict,
                                 config.options.worker_is_primary)
 
+    settings = {
+            "cookie_secret": "so secret in my public github repo workaround"
+    }
 
     application = tornado.web.Application([
             (r"/jobs/submit", SubmitJobForm, dict(models=models)),
@@ -162,7 +183,8 @@ if __name__ == "__main__":
             ], 
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             debug=config.options.debug, 
-            ui_modules={'JobOptions': JobOptionsModule}
+            ui_modules={'JobOptions': JobOptionsModule},
+            **settings
             )
 
     application.listen(config.options.port)
