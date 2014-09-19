@@ -12,10 +12,12 @@ import zipfile
 from zipfile import ZipFile
 
 # utility functions
-def fetch_file_from_url(url, destination_dir):
+def fetch_file_from_url(url, destination_dir, file_name=None):
 
     # http://stackoverflow.com/questions/22676/how-do-i-download-a-file-over-http-using-python
-    file_name = url.split('/')[-1] 
+    if(not file_name):
+        file_name = url.split('/')[-1] 
+
     u = urllib2.urlopen(url)
     destination_file = os.path.join(destination_dir, file_name)
     f = open(destination_file, 'wb')
@@ -32,9 +34,9 @@ def fetch_file_from_url(url, destination_dir):
 
         file_size_dl += len(buffer)
         f.write(buffer)
-        status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
-        status = status + chr(8)*(len(status)+1)
-        logging.info(status)
+        # status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+        # status = status + chr(8)*(len(status)+1)
+        # logging.info(status)
 
     f.close()
 
@@ -122,24 +124,34 @@ class JobManager:
     def add_update_job_table(self, job):
         self.hset("model_runner:jobs", job.uuid, job)
 
-    def enqueue(self, job, job_data_blob):
+    def enqueue(self, job, job_data_blob=None, job_data_url=None):
         """ 
+        Run from 'primary'
         write job data to file and queue up for processing
-        intended to be run from primary server
         job_data_blob is a blob of a zip file to be written to disk 
+        job_data_url is the url of a zip file to fetched and written to disk 
         """
+
+        # only allow job data as blob or url
+        assert((job_data_blob==None) ^ (job_data_url==None))
+
         job_data_dir = os.path.join(self.data_dir, job.uuid)
         if(not os.path.exists(job_data_dir)):
             os.mkdir(job_data_dir)
         
-        logging.info("writing input file for job %s to %s" % (job.uuid, job_data_dir))
-        file_handle = open(os.path.join(job_data_dir, "input.zip"), 'wb')
-        file_handle.write(job_data_blob)
-        file_handle.close()
+        job_data_file = os.path.join(job_data_dir, "input.zip")
+        if(job_data_blob):
+            logging.info("writing input file for job to %s" % job_data_file)
+            file_handle = open(job_data_file, 'wb')
+            file_handle.write(job_data_blob)
+            file_handle.close()
+        else:
+            logging.info("retrieving input file for job and writing to %s" % job_data_file)
+            fetch_file_from_url(job_data_url, job_data_dir, "input.zip")
 
         # add to global job list then queue it to be run
         job.primary_url = self.primary_url
-        job.data_dir = self.data_dir # so we know where to get output.zip from
+        job.primary_data_dir = self.data_dir # so we know where to get output.zip from
         self.add_update_job_table(job)
         job_queue = "model_runner:queues:%s" % job.model
 
@@ -148,6 +160,7 @@ class JobManager:
 
     def wait_for_new_jobs(self, model_name):
         """ 
+        Run from 'worker'
         listen for jobs to run as they come in on the model based queue 
         This is meant to be called in an infinite loop as part of a worker.  
         It blocks on waiting for job and while command is being run 
@@ -160,6 +173,8 @@ class JobManager:
         
         # assign the job to this worker
         job.worker_url = self.worker_url
+        # keep the worker_data_dir separate from primary
+        job.worker_data_dir = self.data_dir 
         # primary_queue to notify primary server of any errors or completion
         primary_queue = "model_runner:queues:" + self.primary_url
 
@@ -188,7 +203,7 @@ class JobManager:
             logging.info(failure_msg)
             job_data_log.write(failure_msg)
             job.status = JobManager.STATUS_FAILED
-            self.hset("model_runner:jobs", job.uuid, job)
+            self.add_update_job_table(job)
             self.rdb.rpush(primary_queue, job.uuid)
             job_data_log.close()
             return
@@ -234,7 +249,7 @@ class JobManager:
         else:
             job.status = JobManager.STATUS_FAILED
 
-        self.hset("model_runner:jobs", job.uuid, job)
+        self.add_update_job_table(job)
 
         # notify primary server job is done
         self.rdb.rpush(primary_queue, job.uuid)
@@ -242,6 +257,7 @@ class JobManager:
 
     def wait_for_finished_jobs(self):
         """ 
+        Run from 'primary'
         listen for jobs that have finished (by workers)
         This is meant to be called in an infinite loop as part of a primary server  
         It blocks while waiting for finished jobs
@@ -250,13 +266,13 @@ class JobManager:
         logging.info("waiting for finished jobs on queue %s" % primary_queue)
         result = self.rdb.blpop(primary_queue)
         uuid = result[1]
-        job = self.hget("model_runner:jobs", uuid)
+        job = self.get_job(uuid)
 
         logging.info("job %s finished with status of %s" % (job.uuid, job.status))
         if(job.status == JobManager.STATUS_PROCESSED):
             if(not self.worker_is_primary()): # need to get output
                 logging.info("retrieving output for job %s" % job.uuid)
-                output_url = job.worker_url + "/" + self.data_dir + "/" + job.uuid + "/output.zip"
+                output_url = job.worker_url + "/" + job.worker_data_dir + "/" + job.uuid + "/output.zip"
                 job_data_dir = os.path.join(self.data_dir, job.uuid)
                 if(not os.path.exists(job_data_dir)):
                     os.mkdir(job_data_dir)
@@ -264,8 +280,8 @@ class JobManager:
                 fetch_file_from_url(output_url, job_data_dir)
                 
             job.status = JobManager.STATUS_COMPLETE
-            self.hset("model_runner:jobs", job.uuid, job)
-
+            self.add_update_job_table(job)
+           
     def kill_job(self, job):
         """
         Notify job worker that the job should be killed
@@ -283,7 +299,7 @@ class JobManager:
         input_zip = os.path.join(job_data_dir, "input.zip")
         if not self.worker_is_primary():
             # need to fetch
-            input_url = job.primary_url + "/" + self.data_dir + "/" + job.uuid + "/input.zip"
+            input_url = job.primary_url + "/" + job.primary_data_dir + "/" + job.uuid + "/input.zip"
             logging.info("fetching data from %s" % input_url)
             fetch_file_from_url(input_url, job_data_dir)
 

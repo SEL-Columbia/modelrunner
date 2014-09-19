@@ -4,6 +4,11 @@
   <li><a href="/jobs">View</a></li>
   <li class="active"><a href="/jobs/submit">Submit</a></li>
 </ul>
+{% if flash_msg %}
+  <div class="alert alert-error">
+     {{ flash_msg }}
+  </div>
+{% end %}
 <form enctype="multipart/form-data" action="/jobs" method="post">
   <div class="form-group">
   <label for="job_name">Job Name</label>
@@ -17,13 +22,35 @@
     {% end %}
   </select>
   </div>
-  <div class="form-group">
+  <div>          
+  <!-- <label for="input_type">File from URL</label><input name="input_type" type="radio" class="radio" value="url_input"> -->
+  <!-- <label for="input_type">File from local directory</label><input name="input_type" type="radio" class="radio" value="file_input"> -->
+  File from URL<input id="url_input_radio" name="input_type" type="radio" class="radio" value="url_input">
+  File from local directory<input id="file_input_radio" name="input_type" type="radio" class="radio" value="file_input">    
+  </div>
+
+  <div id="file_input" class="form-group input_file_source">
   <label for="zip_file">Input File</label>
   <input type="file" name="zip_file" id="zip_file"/>
+  </div>
+  <div id="url_input" class="form-group input_file_source">
+  <label for="zip_url">Input URL</label>
+  <input type="text" name="zip_url" id="zip_url"/>
   </div>
   <div class="form-group">
   <button type="submit" class="btn btn-primary">Submit</button>
   </div>
 </form>
 {% end %}
-
+{% block js %}
+<script>
+$(document).ready(function(){ 
+    $('div .radio').click(function () {
+        $('div .input_file_source').hide();    
+        $("#"+$(this).val()).show();  
+    });
+    //select file input
+    $('input#file_input_radio').click();
+});
+</script>
+{% end %}

@@ -2,6 +2,11 @@ import tornado
 import csv
 import sys
 
+# Prevents this script from failing when output is piped
+# to another process
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 # setup config options
 import config
 from tornado.options import parse_command_line, parse_config_file
@@ -25,7 +30,9 @@ if __name__ == "__main__":
         # order descending
         jobs.sort(key=lambda job: job.created, reverse=True)
         job_dicts = [job.__dict__ for job in jobs]
-        job_keys = job_dicts[0].keys()
-        dict_writer = csv.DictWriter(sys.stdout, job_keys)
-        dict_writer.writer.writerow(job_keys)
+        key_sets = [set(job_dict.keys()) for job_dict in job_dicts]
+        all_keys = reduce(set.union, key_sets)
+
+        dict_writer = csv.DictWriter(sys.stdout, list(all_keys))
+        dict_writer.writer.writerow(list(all_keys))
         dict_writer.writerows(job_dicts)
