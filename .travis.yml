@@ -1,0 +1,26 @@
+language: python
+python:
+  - "2.7"
+before_install:
+  - sudo apt-get update
+install:
+  - wget http://repo.continuum.io/miniconda/Miniconda-3.6.0-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+  # setup model_runner
+  - conda create -n model_runner --file requirements.txt 
+services:
+  - redis-server
+before_script:
+  # setup primary, worker(s)
+  - source activate model_runner
+  - ./start_primary.sh
+  - ./start_worker.sh
+script:
+  # simple submit job for now
+  - time curl -v -include -F "job_name=test" -F "model=test" -F "zip_url=http://networkplanner.modilabs.org/scenarios/3460.zip" http://localhost:8080/jobs 
