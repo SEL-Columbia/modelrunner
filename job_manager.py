@@ -21,9 +21,7 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
     u = urllib2.urlopen(url)
     destination_file = os.path.join(destination_dir, file_name)
     f = open(destination_file, 'wb')
-    meta = u.info()
-    file_size = int(meta.getheaders("Content-Length")[0])
-    logging.info("Downloading: %s Bytes: %s" % (file_name, file_size))
+    logging.info("Downloading from url %s" % url)
 
     file_size_dl = 0
     block_sz = 8192
@@ -34,10 +32,8 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
 
         file_size_dl += len(buffer)
         f.write(buffer)
-        # status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
-        # status = status + chr(8)*(len(status)+1)
-        # logging.info(status)
 
+    logging.info("Finished %s bytes from url %s" % (file_size_dl, url))
     f.close()
 
 def zipdir(path, zip_file_name):
@@ -329,6 +325,4 @@ class Job:
         self.uuid = str(uuid.uuid4())
         self.created = datetime.datetime.utcnow()
         self.status = JobManager.STATUS_CREATED
-
-
 

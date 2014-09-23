@@ -4,12 +4,9 @@
   <li><a href="/jobs">View</a></li>
   <li class="active"><a href="/jobs/submit">Submit</a></li>
 </ul>
-{% if flash_msg %}
-  <div class="alert alert-error">
-     {{ flash_msg }}
-  </div>
-{% end %}
-<form enctype="multipart/form-data" action="/jobs" method="post">
+<div id="message" class="alert alert-error">
+</div>
+<form enctype="multipart/form-data" id="submit_job" method="POST" action="">
   <div class="form-group">
   <label for="job_name">Job Name</label>
   <input type="text" id="job_name" name="job_name" placeholder="your job name"/>
@@ -38,7 +35,7 @@
   <input type="text" name="zip_url" id="zip_url"/>
   </div>
   <div class="form-group">
-  <button type="submit" class="btn btn-primary">Submit</button>
+  <button type="button" class="btn btn-primary" id="submit">Submit</button>
   </div>
 </form>
 {% end %}
@@ -49,8 +46,29 @@ $(document).ready(function(){
         $('div .input_file_source').hide();    
         $("#"+$(this).val()).show();  
     });
-    //select file input
+    // select file input
     $('input#file_input_radio').click();
+
+    // handle ajax submit
+    $("button#submit").click(function(){
+        var formData = new FormData($("form#submit_job")[0]); 
+        $.ajax({
+            type: "POST",
+            url: "/jobs",
+            data: formData,
+            async: false,
+            success: function(data){
+                $("#message").html(data.message)
+            },
+            error: function(data){
+                $("#message").html(data.message)
+            },
+            cache: false,
+            contentType: false,
+            processData: false
+        });
+        return false;
+    });
 });
 </script>
 {% end %}
