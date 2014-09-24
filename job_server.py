@@ -65,19 +65,21 @@ class JobOptionsModule(tornado.web.UIModule):
 
     def render(self, job):
         href_templ = "<a href=%s>%s</a>" 
+        # may be confusing, but we need to make kill links ajax 
+        href_ajax_templ = "<a class='ajax_link' href=%s>%s</a>" 
         if job.status == job_manager.JobManager.STATUS_RUNNING:
-           log_option = href_templ % (self.log_url(job), "Log")
-           kill_option = href_templ % (self.kill_url(job), "Kill")
-           return "%s,%s" % (log_option, kill_option)
+            log_option = href_templ % (self.log_url(job), "Log")
+            kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
+            return "%s,%s" % (log_option, kill_option)
 
         if job.status == job_manager.JobManager.STATUS_COMPLETE:
-           log_option = href_templ % (self.log_url(job), "Log")
-           dload_option = href_templ % (self.download_url(job), "Download")
-           return "%s,%s" % (log_option, dload_option)
+            log_option = href_templ % (self.log_url(job), "Log")
+            dload_option = href_templ % (self.download_url(job), "Download")
+            return "%s,%s" % (log_option, dload_option)
 
         if job.status == job_manager.JobManager.STATUS_FAILED:
-           log_option = href_templ % (self.log_url(job), "Log")
-           return log_option
+            log_option = href_templ % (self.log_url(job), "Log")
+            return log_option
 
         return ""
         
@@ -93,7 +95,9 @@ class JobKillHandler(tornado.web.RequestHandler):
     def get(self, job_uuid):
         job =  self.job_mgr.get_job(job_uuid)
         self.job_mgr.kill_job(job)
-        self.redirect("/jobs")
+        response_dict = {'message': "OK:  Killed job id %s" % job.uuid, 'id': job.uuid}
+        self.write(response_dict)
+        self.finish()
 
 class JobHandler(tornado.web.RequestHandler):
 

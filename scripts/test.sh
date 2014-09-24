@@ -3,12 +3,16 @@
 input_dir=$1
 output_dir=$2
 
+# count SECONDS seconds and write ouput
+export COUNT_SECONDS=8
+
 ls $input_dir
+
 i=0
-while [ $i -lt 10 ]
+while (( i < COUNT_SECONDS ))
 do
-	echo $i
-	sleep 2
-    i=$((i+1))
+    echo $i
+	sleep 1
+    let i++
 done
-echo "done" > $output_dir/done.txt
+echo "output" > $output_dir/output.txt

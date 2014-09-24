@@ -28,4 +28,4 @@ script:
   - for pid in *.pid; do p=`cat $pid`; echo $p; done
   - ps -ef | grep python
   # simple submit job for now
-  - time curl -v -include -F "job_name=test" -F "model=test" -F "zip_url=http://networkplanner.modilabs.org/scenarios/3460.zip" http://localhost:8080/jobs 
+  - curl -v -include -F "job_name=test" -F "model=test" -F "zip_url=http://networkplanner.modilabs.org/scenarios/3460.zip" http://localhost:8080/jobs 

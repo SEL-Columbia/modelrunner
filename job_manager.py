@@ -53,20 +53,37 @@ class WaitForKill(threading.Thread):
     Thread to wait for kill messages while process is running
     """
 
-    def __init__(self, redis_obj, worker_queue, popen_proc):
+    def __init__(self, redis_obj, worker_queue, popen_proc, job_uuid):
         threading.Thread.__init__(self)
         self.redis_obj = redis_obj 
         self.worker_queue = worker_queue
         self.popen_proc = popen_proc
+        self.job_uuid = job_uuid
 
     def run(self):
-        result = self.redis_obj.blpop(self.worker_queue)
-        msg = result[1]
-        logging.info("received msg %s" % msg)
-        if(msg == "KILL"):
-            logging.info("received kill msg on queue %s terminating pid %s" % (self.worker_queue, self.popen_proc.pid))
-            self.popen_proc.terminate()
+        # handle case where kill message for "old" job is submitted
+        # by pulling off messages until one associated with 'this' job is found
+        # (otherwise, we might kill new jobs via messages for old jobs)
+        while(True):  
+            # block on queue and unpickle message dict when it arrives
+            raw_message = self.redis_obj.blpop(self.worker_queue)[1]
+            message = pickle.loads(raw_message)
+            job_uuid = message['job_uuid']
+            command = message['command']
+            logging.info("Received command %s for job_uuid %s on queue %s" % (command, job_uuid, self.worker_queue))
+            if(job_uuid == self.job_uuid):
 
+                if(command == "KILL"):
+                    logging.info("Terminating pid %s" % self.popen_proc.pid)
+                    self.popen_proc.terminate()
+
+                if(command == "BREAK"):
+                    logging.info("Stop waiting for commands for job %s" % self.job_uuid)
+
+                # we've handled message for 'this' job so exit loop (and thread)
+                break
+            else:
+                logging.info("Command %s for OLD job_uuid %s ignored" % (command, job_uuid))
 
 class JobManager:
 
@@ -222,7 +239,7 @@ class JobManager:
         logging.info("running command %s" % command_str)
         popen_proc = subprocess.Popen(command_str, shell=True, stdout=job_data_log, stderr=job_data_log)
         worker_queue = "model_runner:queues:" + self.worker_url
-        wk = WaitForKill(self.rdb, worker_queue, popen_proc)
+        wk = WaitForKill(self.rdb, worker_queue, popen_proc, job.uuid)
         wk.start()
 
         # wait for command to finish or for it to be killed
@@ -233,7 +250,8 @@ class JobManager:
 
         if (wk.isAlive()):
             # send a message to stop the wait for kill thread
-            self.rdb.rpush(worker_queue, "END")
+            message = {'command': "BREAK", 'job_uuid': job.uuid}
+            self.rdb.rpush(worker_queue, pickle.dumps(message))
 
         logging.info("finished processing job and notifying primary server %s" % self.primary_url)
 
@@ -284,7 +302,8 @@ class JobManager:
         """
         worker_queue = "model_runner:queues:" + job.worker_url
         logging.info("sending message to kill job on %s" % job.worker_url)
-        self.rdb.rpush(worker_queue, "KILL")
+        message = {'command': "KILL", 'job_uuid': job.uuid}
+        self.rdb.rpush(worker_queue, pickle.dumps(message))
 
     def _prep_input(self, job):
         """ fetch (if needed) and unzip data to appropriate dir """
