@@ -26,6 +26,8 @@ job_id=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)[
 echo "job id $job_id created"
 
 # wait until status is RUNNING before kill
+# unset fail on error
+set +e
 status=""
 MAX_TRIES=20
 tries=0
