@@ -22,22 +22,60 @@ Components
     Model that can be run with inputs on a Worker
 
 
-
-
 API (Primary Server)
 --------
 
+(samples assume Primary running on localhost:8080)
+
 - /jobs (post)
 
-    Post a job (input as name, model, zip)
+    Post a job 
+    ```
+    curl -s -F "job_name=test_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://localhost:8080/jobs > response
 
-- /jobs (get)
+    {
+        "id": "6efecaab-7d9f-4207-b68d-5259915213af",
+        "message": "OK:  Submitted job id 6efecaab-7d9f-4207-b68d-5259915213af"
+    }
 
-    Get all jobs (as a view for now)
+    ```
+
+- /jobs/&lt;id&gt;
+
+    Get job status
+    ```
+    http://localhost:8080/jobs/$job_id
+
+    {
+        "created": "2014-09-24T21:22:12.309192",
+        "model": "test",
+        "name": "test_kill_2014-09-24_17:22:12",
+        "primary_data_dir": "data",
+        "primary_url": "http://localhost:8000",
+        "status": "FAILED",
+        "uuid": "df11e13d-87d5-433b-ad28-9b27b95f6e3e",
+        "worker_data_dir": "worker_data",
+        "worker_url": "http://localhost:8888"
+    }
+
+    ```
 
 - /jobs/&lt;id&gt;/kill
 
     Kill a running job
+    ```
+    http://localhost:8080/jobs/$job_id
+
+    {
+        "id": "df11e13d-87d5-433b-ad28-9b27b95f6e3e",
+        "message": "OK:  Killed job id df11e13d-87d5-433b-ad28-9b27b95f6e3e"
+    }
+
+    ```
+
+- /jobs (get)
+
+    Get all jobs (returns an html view for now)
 
 
 Worker Process
@@ -62,3 +100,14 @@ Additionally, the Primary waits on a queue:
 Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
 
 ![Diagram](http://sel-columbia.github.io/model_runner/diagram.png "diagram")
+
+Installation and Deployment
+---------------------------
+
+See .travis.yml for details
+
+Development & Testing
+-----------
+
+Once you've made changes to your branch run `./testing/test_full.sh` and
+ensure it's exit code is 0.
