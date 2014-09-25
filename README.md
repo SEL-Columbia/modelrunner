@@ -4,7 +4,18 @@ Model Runner
 Model Runner is a light-weight job management web application.  
 The purpose is to distribute model runs (i.e. jobs) across servers.
 
+If you have a model that takes an input file (or files) and returns an
+output file (or files) and runs in memory, you can expose it via the 
+web to a broader audience via Model Runner.  
+
 [![Build Status](https://travis-ci.org/SEL-Columbia/model_runner.svg?branch=master)](https://travis-ci.org/SEL-Columbia/model_runner.svg?branch=master)
+
+
+Architecture
+------------
+
+![Diagram](http://sel-columbia.github.io/model_runner/diagram.png "diagram")
+
 
 Components
 ----------
@@ -99,7 +110,6 @@ Additionally, the Primary waits on a queue:
 
 Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
 
-![Diagram](http://sel-columbia.github.io/model_runner/diagram.png "diagram")
 
 Installation and Deployment
 ---------------------------
