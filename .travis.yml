@@ -24,6 +24,6 @@ before_script:
 script:
   - echo "in script"
   - sleep 1
-  - for pid_file in *.pid; do p=`cat $pid`; echo "$pid_file $p"; done
+  - for pid_file in *.pid; do p=`cat $pid_file`; echo "$pid_file $p"; done
   # simple submit job for now
   - ./testing/test_full.sh
