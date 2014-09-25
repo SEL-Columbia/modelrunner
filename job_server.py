@@ -1,6 +1,7 @@
 import os, uuid
 import StringIO
 from urlparse import urlparse
+import json
 
 import tornado
 import tornado.ioloop
@@ -15,29 +16,28 @@ import config
 import job_manager
 
 THREAD_POOL = ThreadPoolExecutor(4)
-# For error messages
-class FlashMessageMixin(object):
-    def set_flash_message(self, key, message):
-        message = tornado.escape.json_encode(message)
-        self.set_secure_cookie('flash_msg_%s' % key, message)
-                                            
-    def get_flash_message(self, key):
-        val = self.get_secure_cookie('flash_msg_%s' % key)
-        self.clear_cookie('flash_msg_%s' % key)
-                                                                        
-        if val is not None:
-            val = tornado.escape.json_decode(val)
-                                                                                                    
-        return val
 
-class SubmitJobForm(tornado.web.RequestHandler, FlashMessageMixin):
+import datetime
+
+# to allow date_times within an object to be json encoded
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        elif isinstance(obj, datetime.date):
+            return obj.isoformat()
+        elif isinstance(obj, datetime.timedelta):
+            return (datetime.datetime.min + obj).time().isoformat()
+        else:
+            return super(DateTimeEncoder, self).default(obj)
+
+class SubmitJobForm(tornado.web.RequestHandler):
 
     def initialize(self, models):
         self.models = models
 
     def get(self):
-        flash_msg = self.get_flash_message('error')
-        self.render("submit_job.html", models=self.models, flash_msg=flash_msg)
+        self.render("submit_job.html", models=self.models)
 
 class JobOptionsModule(tornado.web.UIModule):
 
@@ -65,19 +65,21 @@ class JobOptionsModule(tornado.web.UIModule):
 
     def render(self, job):
         href_templ = "<a href=%s>%s</a>" 
+        # may be confusing, but we need to make kill links ajax 
+        href_ajax_templ = "<a class='ajax_link' href=%s>%s</a>" 
         if job.status == job_manager.JobManager.STATUS_RUNNING:
-           log_option = href_templ % (self.log_url(job), "Log")
-           kill_option = href_templ % (self.kill_url(job), "Kill")
-           return "%s,%s" % (log_option, kill_option)
+            log_option = href_templ % (self.log_url(job), "Log")
+            kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
+            return "%s,%s" % (log_option, kill_option)
 
         if job.status == job_manager.JobManager.STATUS_COMPLETE:
-           log_option = href_templ % (self.log_url(job), "Log")
-           dload_option = href_templ % (self.download_url(job), "Download")
-           return "%s,%s" % (log_option, dload_option)
+            log_option = href_templ % (self.log_url(job), "Log")
+            dload_option = href_templ % (self.download_url(job), "Download")
+            return "%s,%s" % (log_option, dload_option)
 
         if job.status == job_manager.JobManager.STATUS_FAILED:
-           log_option = href_templ % (self.log_url(job), "Log")
-           return log_option
+            log_option = href_templ % (self.log_url(job), "Log")
+            return log_option
 
         return ""
         
@@ -93,9 +95,11 @@ class JobKillHandler(tornado.web.RequestHandler):
     def get(self, job_uuid):
         job =  self.job_mgr.get_job(job_uuid)
         self.job_mgr.kill_job(job)
-        self.redirect("/jobs")
+        response_dict = {'message': "OK:  Killed job id %s" % job.uuid, 'id': job.uuid}
+        self.write(response_dict)
+        self.finish()
 
-class JobHandler(tornado.web.RequestHandler, FlashMessageMixin):
+class JobHandler(tornado.web.RequestHandler):
 
     def initialize(self, job_mgr):
         self.job_mgr = job_mgr
@@ -118,15 +122,17 @@ class JobHandler(tornado.web.RequestHandler, FlashMessageMixin):
         file_url = self.get_argument('zip_url', default=False)
         # validation
         if((not file_url) and (not len(self.request.files) > 0)):
-            self.set_flash_message('error', "Invalid input.  Please select a valid url or file")
-            self.redirect('/jobs/submit')
+            response_dict = {'message': "Error:  Invalid input.  Please select a valid url or file"}
+            self.write(response_dict)
+            self.finish()
 
         # add job to queue and list
         if(file_url):
             parsed = urlparse(file_url)
             if(not parsed.scheme):
-                self.set_flash_message('error', "Invalid url (needs a scheme...i.e. http://)")
-                self.redirect('/jobs/submit')
+                response_dict = {'message': "Error:  Invalid url (needs a scheme...i.e. http://)"}
+                self.write(response_dict)
+                self.finish()
 
             # self.job_mgr.enqueue(job, job_data_url=file_url)
             # don't block
@@ -141,7 +147,9 @@ class JobHandler(tornado.web.RequestHandler, FlashMessageMixin):
             # yield tornado.gen.Task(self.enqueue, job, job_data_blob=file_info['body'])
             yield THREAD_POOL.submit(self.job_mgr.enqueue, job, job_data_blob=file_info['body'])
        
-        self.redirect("/jobs")
+        response_dict = {'message': "OK:  Submitted job id %s" % job.uuid, 'id': job.uuid}
+        self.write(response_dict)
+        self.finish()
 
     def enqueue(self, job, job_data_blob=None, job_data_url=None, callback=None):
             self.job_mgr.enqueue(job, job_data_blob=job_data_blob, job_data_url=job_data_url)
@@ -150,12 +158,18 @@ class JobHandler(tornado.web.RequestHandler, FlashMessageMixin):
     """
     Get the list of jobs
     """
-    def get(self):
-        jobs =  self.job_mgr.get_jobs()
-        # order descending
-        jobs.sort(key=lambda job: job.created, reverse=True)
-        self.render("view_jobs.html", jobs=jobs)
-       
+    def get(self, job_uuid=None):
+        if(job_uuid): # single job info
+            job = self.job_mgr.get_job(job_uuid)
+            json_job = DateTimeEncoder().encode(job.__dict__)
+            self.write(json_job)
+            self.finish()
+        else: # TODO:  refactor to return only job json
+            jobs =  self.job_mgr.get_jobs()
+            # order descending
+            jobs.sort(key=lambda job: job.created, reverse=True)
+            self.render("view_jobs.html", jobs=jobs)
+           
 if __name__ == "__main__":
 
     parse_config_file("config.ini")
@@ -172,19 +186,15 @@ if __name__ == "__main__":
                                 command_dict,
                                 config.options.worker_is_primary)
 
-    settings = {
-            "cookie_secret": "so secret in my public github repo workaround"
-    }
-
     application = tornado.web.Application([
             (r"/jobs/submit", SubmitJobForm, dict(models=models)),
             (r"/jobs", JobHandler, dict(job_mgr=jm)),
+            (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", JobHandler, dict(job_mgr=jm)),
             (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill", JobKillHandler, dict(job_mgr=jm)),
             ], 
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             debug=config.options.debug, 
-            ui_modules={'JobOptions': JobOptionsModule},
-            **settings
+            ui_modules={'JobOptions': JobOptionsModule}
             )
 
     application.listen(config.options.port)

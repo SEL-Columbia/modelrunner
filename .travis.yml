@@ -1,0 +1,29 @@
+language: python
+python:
+  - "2.7"
+before_install:
+  - sudo apt-get update
+install:
+  - wget http://repo.continuum.io/miniconda/Miniconda-3.6.0-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+  # setup model_runner
+  - conda create -n model_runner --file requirements.txt 
+services:
+  - redis-server
+before_script:
+  # setup primary, worker(s)
+  - source activate model_runner
+  - ./start_primary.sh
+  - ./start_worker.sh
+script:
+  - echo "in script"
+  - sleep 1
+  - for pid_file in *.pid; do p=`cat $pid_file`; echo "$pid_file $p"; done
+  # simple submit job for now
+  - ./testing/test_full.sh

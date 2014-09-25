@@ -4,6 +4,8 @@
   <li class="active"><a href="/jobs">View</a></li>
   <li><a href="/jobs/submit">Submit</a></li>
 </ul>
+<div id="message" class="alert alert-error">
+</div>
 <table class="table table-striped">
   <thead>
     <tr>
@@ -22,4 +24,26 @@
     {% end %}
   </tbody>
 </table>
+{% end %}
+{% block js %}
+<script>
+$(document).ready(function(){ 
+    // handle ajax submit
+    $("a.ajax_link").click(function(e){
+       e.preventDefault(); 
+
+       var url = $(this).attr('href');
+       $.ajax({
+            url: url,
+            success: function(data){
+                $("#message").html(data.message)
+            },
+            error: function(data){
+                $("#message").html(data.message)
+            },
+        });
+        return false;
+    });
+});
+</script>
 {% end %}
