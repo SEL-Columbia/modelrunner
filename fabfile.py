@@ -138,6 +138,9 @@ def pull(repo, directory, branch="master"):
     with cd(directory):
         # fetch repo, checkout branch and get rid of local 
         run("git fetch origin")
-        run("git checkout %s" % branch)
+        run("git remote update")
         run("git reset --hard origin/%s" % branch)
+        if(run("git checkout %s" % branch, warn_only=True).failed):
+            run("git checkout -b %s origin/%s" % (branch, branch))
+
         run('find . -name "*.pyc" | xargs rm -rf')
