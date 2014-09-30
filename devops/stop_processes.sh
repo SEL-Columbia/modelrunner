@@ -7,5 +7,6 @@ for pid_file in *.pid
 do
     pid=`cat $pid_file`
     echo "kill $pid from $pid_file"
-    kill -9 $pid
+    kill -s TERM $pid
+    rm $pid_file
 done

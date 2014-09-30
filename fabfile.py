@@ -1,7 +1,7 @@
 # fabfile for managing modelrunner deployments
 import os
 
-from fabric.api import env, run, settings, cd, put, sudo
+from fabric.api import task, env, run, settings, cd, put, sudo
 import fabric
 
 DEFAULTS = {
@@ -33,7 +33,8 @@ def run_conda_enabled(command):
 
 def stop():
     print("stopping modelrunner processes")
-    run("./model_runner/devops/stop_processes.sh")
+    with cd(env.project_directory):
+        run("./devops/stop_processes.sh", pty=False)
 
 setup_called = False
 def setup_env(**args):
@@ -49,6 +50,7 @@ def setup_env(**args):
     env.update(args)
     env.project_directory = os.path.join(env.home, env.project)
 
+@task
 def setup(**args):
     """
     Install or update the deployment on a machine
@@ -70,12 +72,12 @@ def setup(**args):
     # setup sequencer (not truly needed on primary, but keep 'em consistent for now)
     run_conda_enabled("./model_runner/devops/setup_sequencer.sh")
 
-    # deploy appropriate config file
-    put(env.config_file, './model_runner/config.ini')
-
+@task
 def update_model_runner(**args):
+    """
+    Updates the model runner code base and devops scripts
+    """
     setup_env(**args)
-    # update modelrunner
     pull(repo=env.modelrunner_repo, directory=env.project_directory, branch=env.modelrunner_branch)
 
     # don't rely on remote scripts from repo, instead push local setup scripts
@@ -85,7 +87,10 @@ def update_model_runner(**args):
             run("mkdir -p ./model_runner/devops")
         
     put("./devops/*.sh", "./model_runner/devops", mode=0755) 
- 
+
+     # deploy appropriate config file
+    put(env.config_file, './model_runner/config.ini')
+
 
 def start_primary():
     """
@@ -105,6 +110,7 @@ def start_worker():
     with cd(env.project_directory):
         run_in_conda_env("./devops/start_worker.sh")
 
+@task
 def start(**args):
     """
     Start server of a particular configuration/environment

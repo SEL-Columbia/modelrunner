@@ -7,8 +7,11 @@ from tornado.options import parse_command_line, parse_config_file
 import job_manager
 
 if __name__ == "__main__":
-    parse_config_file("config.ini")
+
+    # so we can load config via cmd line args
     parse_command_line()
+    parse_config_file(config.options.config_file)
+
     # get the command_ keys
     command_dict = config.options.group_dict("model_command")
 

@@ -11,7 +11,7 @@ then
     fi
     ./Miniconda-3.6.0-Linux-x86_64.sh -b -p $HOME/miniconda
     cd
-    grep '/home/mr/miniconda/bin:' .bashrc && echo 'export PATH="/home/mr/miniconda/bin:$PATH"' >> .bashrc
+    grep '/home/mr/miniconda/bin:' .bashrc || echo 'export PATH="/home/mr/miniconda/bin:$PATH"' >> .bashrc
 fi
 
 # bashrc may not have been sourced if run from remote
