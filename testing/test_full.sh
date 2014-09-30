@@ -7,6 +7,7 @@ set -e
 # kick off a job
 echo "create new job"
 curl -s -F "job_name=test_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://localhost:8080/jobs > response
+cat response
 cat response |  python -c 'import sys, json; print json.load(sys.stdin)["message"]' | grep OK
 job_id=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["id"]'`
 echo "job id $job_id created"
@@ -15,6 +16,7 @@ echo "job id $job_id created"
 sleep 12
 echo "checking job id $job_id status"
 curl -s http://localhost:8080/jobs/$job_id > response
+cat response
 cat response |  python -c 'import sys, json; print json.load(sys.stdin)["status"]' | grep COMPLETE
 echo "job id $job_id completed OK"
 
