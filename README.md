@@ -129,6 +129,9 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 5.  Start the server via `fab -H mr@your_server start:configuration=<worker|primary>,environment=<dev|prod>` 
 
+For production deployments, we suggest using [nginx](http://wiki.nginx.org) as your primary static file server.
+See the sample devops/model_runner.nginx config file.
+
 See fabfile.py for more details and options.
 
 Development & Testing
