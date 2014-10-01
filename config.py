@@ -8,6 +8,7 @@ These can be overridden via parse_config_file and parse_command_line
 
 from tornado.options import define, options
 
+define("config_file", default="config.ini", help="config file for modelrunner")
 define("port", default=8888, help="run on the given port", type=int)
 define("debug", default=False, help="run in debug mode")
 define("redis_url", default="localhost:6379", help="Redis server connection")

@@ -19,8 +19,8 @@ services:
 before_script:
   # setup primary, worker(s)
   - source activate model_runner
-  - ./start_primary.sh
-  - ./start_worker.sh
+  - ./devops/start_primary.sh
+  - ./devops/start_worker.sh
 script:
   - echo "in script"
   - sleep 1
