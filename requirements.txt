@@ -4,3 +4,4 @@ redis-py==2.9.1
 sqlite==3.8.4.1
 tornado==4.0.1
 futures
+fabric

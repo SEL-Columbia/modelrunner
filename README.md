@@ -114,10 +114,25 @@ Note:  Workers will log both info and error output which will be available via w
 Installation and Deployment
 ---------------------------
 
-See .travis.yml for details
+Deployment can be done via [fabric](http://www.fabfile.org) on Debian based distro's.
+There are several options for deployment ranging from a single server "dev" to multi-server "prod" setups.  
+
+Here are the basic steps (assumes you have a python environment with fabric installed locally):
+
+1.  Bring up an Ubuntu/Debian instance(s) (henceforth referred to as "your_server")
+
+2.  Create a user named 'mr' to run model_runner under on your_server 
+
+3.  On your local machine, clone this repo and cd into the model_runner directory (if not already done)
+
+4.  Setup the server via `fab -H mr@your_server setup:config_file=your_config.ini` (see sample config.ini for a guide)
+
+5.  Start the server via `fab -H mr@your_server start:configuration=<worker|primary>,environment=<dev|prod>` 
+
+See fabfile.py for more details and options.
 
 Development & Testing
 -----------
 
-Once you've made changes to your branch run `./testing/test_full.sh` and
+Once you've made changes to your branch, start up a primary and worker, run `./testing/test_full.sh` and
 ensure it's exit code is 0.
