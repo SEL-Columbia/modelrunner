@@ -11,11 +11,11 @@ then
     fi
     ./Miniconda-3.6.0-Linux-x86_64.sh -b -p $HOME/miniconda
     cd
-    grep '/home/mr/miniconda/bin:' .bashrc || echo 'export PATH="/home/mr/miniconda/bin:$PATH"' >> .bashrc
+    grep "$HOME/miniconda/bin:" .bashrc || echo "export PATH=\"$HOME/miniconda/bin:$PATH\"" >> .bashrc
 fi
 
 # bashrc may not have been sourced if run from remote
-export PATH="/home/mr/miniconda/bin:$PATH"
+export PATH="$HOME/miniconda/bin:$PATH"
 
 conda config --set always_yes yes --set changeps1 no
 conda update -q conda
