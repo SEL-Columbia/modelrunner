@@ -1,74 +1,90 @@
 {% extends "base.html" %}
+{% block css %}
+{% end %}
 {% block body %}
-<ul class="nav nav-tabs" role="tablist">
-  <li><a href="/jobs">View</a></li>
-  <li class="active"><a href="/jobs/submit">Submit</a></li>
-</ul>
-<div id="message" class="alert alert-error">
-</div>
-<form enctype="multipart/form-data" id="submit_job" method="POST" action="">
-  <div class="form-group">
-  <label for="job_name">Job Name</label>
-  <input type="text" id="job_name" name="job_name" placeholder="your job name"/>
-  </div>
-  <div class="form-group">
-  <label for="model">Model</label> 
-  <select name="model" id="model">
-    {% for model in models %}
-      <option value="{{model}}">{{model}}</option>
-    {% end %}
-  </select>
-  </div>
-  <div>          
-  <!-- <label for="input_type">File from URL</label><input name="input_type" type="radio" class="radio" value="url_input"> -->
-  <!-- <label for="input_type">File from local directory</label><input name="input_type" type="radio" class="radio" value="file_input"> -->
-  File from URL<input id="url_input_radio" name="input_type" type="radio" class="radio" value="url_input">
-  File from local directory<input id="file_input_radio" name="input_type" type="radio" class="radio" value="file_input">    
-  </div>
+<div class="container">
+    <div class="page-header">
+        <div class="row">
+            <div class="col-md-1">
+                <a href="/">
+                    <img src={{ static_url("img/model_runner_logo_sm.png") }} title="model runner" alt="model runner Logo" />
+                </a>
+            </div>
+            <div>
+                <h3><strong>model runner</strong></h3>
+            </div>
+        </div>
+    </div> 
+    <ul class="nav nav-tabs" role="tablist">
+        <li><a href="/jobs">View</a></li>
+        <li class="active"><a href="/jobs/submit">Submit</a></li>
+    </ul>
+    <div id="message" class="alert alert-error">
+    </div>
+    <form enctype="multipart/form-data" id="submit_job" method="POST" action="">
+        <div class="form-group">
+            <label for="job_name">Job Name</label>
+            <input type="text" id="job_name" name="job_name" placeholder="your job name"/>
+        </div>
+        <div class="form-group">
+            <label for="model">Model</label> 
+            <select name="model" id="model">
+                {% for model in models %}
+                <option value="{{model}}">{{model}}</option>
+                {% end %}
+            </select>
+        </div>
+        <div>          
+            <!-- <label for="input_type">File from URL</label><input name="input_type" type="radio" class="radio" value="url_input"> -->
+            <!-- <label for="input_type">File from local directory</label><input name="input_type" type="radio" class="radio" value="file_input"> -->
+            File from URL<input id="url_input_radio" name="input_type" type="radio" class="radio" value="url_input">
+            File from local directory<input id="file_input_radio" name="input_type" type="radio" class="radio" value="file_input">    
+        </div>
 
-  <div id="file_input" class="form-group input_file_source">
-  <label for="zip_file">Input File</label>
-  <input type="file" name="zip_file" id="zip_file"/>
-  </div>
-  <div id="url_input" class="form-group input_file_source">
-  <label for="zip_url">Input URL</label>
-  <input type="text" name="zip_url" id="zip_url"/>
-  </div>
-  <div class="form-group">
-  <button type="button" class="btn btn-primary" id="submit">Submit</button>
-  </div>
-</form>
+        <div id="file_input" class="form-group input_file_source">
+            <label for="zip_file">Input File</label>
+            <input type="file" name="zip_file" id="zip_file"/>
+        </div>
+        <div id="url_input" class="form-group input_file_source">
+            <label for="zip_url">Input URL</label>
+            <input type="text" name="zip_url" id="zip_url"/>
+        </div>
+        <div class="form-group">
+            <button type="button" class="btn btn-primary" id="submit">Submit</button>
+        </div>
+    </form>
+</div>
 {% end %}
 {% block js %}
 <script>
 $(document).ready(function(){ 
-    $('div .radio').click(function () {
-        $('div .input_file_source').hide();    
-        $("#"+$(this).val()).show();  
-    });
-    // select file input
-    $('input#file_input_radio').click();
+        $('div .radio').click(function () {
+            $('div .input_file_source').hide();    
+            $("#"+$(this).val()).show();  
+            });
+        // select file input
+        $('input#file_input_radio').click();
 
-    // handle ajax submit
-    $("button#submit").click(function(){
-        var formData = new FormData($("form#submit_job")[0]); 
-        $.ajax({
-            type: "POST",
-            url: "/jobs",
-            data: formData,
-            async: false,
-            success: function(data){
-                $("#message").html(data.message)
-            },
-            error: function(data){
-                $("#message").html(data.message)
-            },
-            cache: false,
-            contentType: false,
-            processData: false
-        });
-        return false;
-    });
+        // handle ajax submit
+        $("button#submit").click(function(){
+            var formData = new FormData($("form#submit_job")[0]); 
+            $.ajax({
+type: "POST",
+url: "/jobs",
+data: formData,
+async: false,
+success: function(data){
+$("#message").html(data.message)
+},
+error: function(data){
+$("#message").html(data.message)
+},
+cache: false,
+contentType: false,
+processData: false
+});
+            return false;
+            });
 });
 </script>
 {% end %}
