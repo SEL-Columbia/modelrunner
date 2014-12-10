@@ -50,7 +50,7 @@ server{
     # access_log /home/path_to_site/access.log;
     # error_log /home/path_to_site/error.log;
  
-    location /jobs {
+    location / {
         proxy_pass http://0.0.0.0:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
