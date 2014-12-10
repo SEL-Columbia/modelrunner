@@ -1,19 +1,18 @@
 {% extends "base.html" %}
+{% block css %}
+    <link rel="stylesheet" href="/static/css/style.css"/>
+{% end %}
 {% block body %}
+<nav class="navbar navbar-default baby-blue-bg" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">
+        <img src="/static/img/model_runner_logo_sm.png" title="model runner" alt="model runner Logo" />
+      </a>
+    </div>
+  </div>
+</nav>
 <div class="container">
-    <div class="page-header">
-        <div class="row">
-            <div class="col-md-1">
-                <a href="/">
-                    <img src={{ static_url("img/model_runner_logo_sm.png") }} title="model runner" alt="model runner Logo" />
-                </a>
-            </div>
-            <div>
-                <h3><strong>model runner</strong></h3>
-            </div>
-        </div>
-    </div> 
-
     <ul class="nav nav-tabs" role="tablist">
         <li class="active"><a href="/jobs">View</a></li>
         <li><a href="/jobs/submit">Submit</a></li>

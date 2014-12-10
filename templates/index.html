@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block css %}
-    <link rel="stylesheet" href={{ static_url("css/style.css") }}/>
+    <link rel="stylesheet" href="static/css/style.css"/>
 {% end %}
 {% block body %}
 <div class="container-fluid">
@@ -16,7 +16,7 @@
             </div>
         </div>
     </div> 
-    <div class="hero-space">
+    <div class="row hero-space baby-blue-bg">
         <div class="row">
             <div class="col-md-2 col-md-offset-2 col-lg-1 col-lg-offset-3">
                 <img src={{ static_url("img/model_runner_logo.png") }} alt="Model Runner Logo" />
@@ -41,7 +41,7 @@
                     <p>Model Runner is a light-weight job management web application.  The purpose is to expose models to be run as jobs in the cloud.  If your model takes a set of input files and produces a set of output files, you can expose it via the web to a broader audience. Sharing tools is now much easier.</p>
                     <p>Want to share your model?</p>
 
-                    <a href="https://github.com/SEL-Columbia/model_runner/blob/master/README.md" class='btn btn-primary'>Read Documentation</a>
+                    <a href="https://github.com/SEL-Columbia/model_runner/blob/master/README.md" class='btn btn-primary btn-splash'>Read Documentation</a>
 
                 </div>
                 <div class="col-md-4 col-lg-3">
@@ -49,21 +49,21 @@
                     <p>Currently, we expose our models for energy planning.</p>
                     <p>Have your inputs ready?</p>
 
-                    <a href="/jobs" class='btn btn-primary'>Get Started</a>
+                    <a href="/jobs" class='btn btn-primary btn-splash'>Get Started</a>
 
                 </div>
             </div>
         </div>
     </div>
-    <div class="row">
+    <div class="row baby-blue-bg">
         <div class="col-md-4 col-md-offset-2 col-lg-3 col-lg-offset-3">
             <h4 class="">Why</h4>
-            <p>Model Runner was built out of the need to easily share our development planning models with colleagues and partners throughout the world. These models are powerful, but require a lengthy installation process to be run on personal computers. Now, with Model Runner, anyone can create a plan without operation roadblocks. It makes it easy for us to collaborate with partners and at the same time allows us to open our tools to a greater audience.
+            <p>Model Runner was built out of the need to easily share our development planning models with colleagues and partners throughout the world. These models are powerful, but require a lengthy installation process to be run on personal computers. Now, with Model Runner, anyone can user our tools without operation roadblocks. It makes it easy for us to collaborate with partners and at the same time allows us to open our tools to a greater audience.
             </p>
         </div>
         <div class="col-md-4 col-lg-3">
             <h4 class="">How</h4>
-            <p>Model Runner uses a simple primary/worker architecture to distribute model runs (jobs).  Any model that can be run as a Linux process that takes input files and produces output files can be deployed and shared.  Model Runner is powered by Python, Tornado, Redis and NGINX.</p>
+            <p>Model Runner uses a simple primary/worker architecture to distribute model runs (jobs).  Any model that can be run as a Linux process that takes input files and produces output files can be deployed and shared.  Model Runner is powered by Python, Tornado, Redis and NGINX. It is open source (contributions encouraged) and licensed under the WTFPL.</p>
         </div>
     </div>
     <div class="row page-footer">

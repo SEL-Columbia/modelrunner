@@ -1,20 +1,18 @@
 {% extends "base.html" %}
 {% block css %}
+    <link rel="stylesheet" href="/static/css/style.css"/>
 {% end %}
 {% block body %}
+<nav class="navbar navbar-default baby-blue-bg" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">
+        <img src="/static/img/model_runner_logo_sm.png" title="model runner" alt="model runner Logo" />
+      </a>
+    </div>
+  </div>
+</nav>
 <div class="container">
-    <div class="page-header">
-        <div class="row">
-            <div class="col-md-1">
-                <a href="/">
-                    <img src={{ static_url("img/model_runner_logo_sm.png") }} title="model runner" alt="model runner Logo" />
-                </a>
-            </div>
-            <div>
-                <h3><strong>model runner</strong></h3>
-            </div>
-        </div>
-    </div> 
     <ul class="nav nav-tabs" role="tablist">
         <li><a href="/jobs">View</a></li>
         <li class="active"><a href="/jobs/submit">Submit</a></li>
@@ -35,8 +33,6 @@
             </select>
         </div>
         <div>          
-            <!-- <label for="input_type">File from URL</label><input name="input_type" type="radio" class="radio" value="url_input"> -->
-            <!-- <label for="input_type">File from local directory</label><input name="input_type" type="radio" class="radio" value="file_input"> -->
             File from URL<input id="url_input_radio" name="input_type" type="radio" class="radio" value="url_input">
             File from local directory<input id="file_input_radio" name="input_type" type="radio" class="radio" value="file_input">    
         </div>
