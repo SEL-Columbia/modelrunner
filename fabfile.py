@@ -59,7 +59,7 @@ def setup(**args):
     """
     setup_env(**args)
     print("baseline setup on %(host_string)s" % env)
-    sudo("apt-get -y install git curl")
+    sudo("apt-get -y install git curl", warn_only=True)
 
     update_model_runner()
    
