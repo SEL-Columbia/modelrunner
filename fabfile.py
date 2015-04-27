@@ -69,8 +69,9 @@ def setup(**args):
     # create environ for model_runner
     run_conda_enabled("./model_runner/devops/setup_model_runner.sh")
 
-    # setup sequencer (not truly needed on primary, but keep 'em consistent for now)
+    # setup sequencer and networker (not truly needed on primary, but keep 'em consistent for now)
     run_conda_enabled("./model_runner/devops/setup_sequencer.sh")
+    run_conda_enabled("./model_runner/devops/setup_networker.sh")
 
 @task
 def update_model_runner(**args):
