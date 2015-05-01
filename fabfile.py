@@ -74,6 +74,20 @@ def setup(**args):
     run_conda_enabled("./model_runner/devops/setup_networker.sh")
 
 @task
+def setup_model(**args):
+    """
+    Install or update the deployment of a model on a machine
+    (should NOT wipeout any data)
+    Assumes machine has been setup with mr user under /home/mr
+    """
+    setup_env(**args)
+
+    # find setup file
+    setup_script = "./model_runner/devops/setup_{model}.sh".format(model=args['model'])
+    # setup sequencer and networker (not truly needed on primary, but keep 'em consistent for now)
+    run_conda_enabled(setup_script)
+
+@task
 def update_model_runner(**args):
     """
     Updates the model runner code base and devops scripts
