@@ -12,13 +12,13 @@ install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-  # setup model_runner
-  - conda create -n model_runner --file requirements.txt 
+  # setup modelrunner
+  - conda create -n modelrunner --file requirements.txt 
 services:
   - redis-server
 before_script:
   # setup primary, worker(s)
-  - source activate model_runner
+  - source activate modelrunner
   - ./devops/start_primary.sh
   - ./devops/start_worker.sh
 script:

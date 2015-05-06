@@ -129,13 +129,13 @@ class JobManager:
         return [pickle.loads(pobj[1]) for pobj in pickled_objs.items()]
 
     def get_jobs(self):
-        return self.hgetall("model_runner:jobs")
+        return self.hgetall("modelrunner:jobs")
 
     def get_job(self, job_uuid):
-        return self.hget("model_runner:jobs", job_uuid)
+        return self.hget("modelrunner:jobs", job_uuid)
 
     def add_update_job_table(self, job):
-        self.hset("model_runner:jobs", job.uuid, job)
+        self.hset("modelrunner:jobs", job.uuid, job)
 
     def enqueue(self, job, job_data_blob=None, job_data_url=None):
         """ 
@@ -166,7 +166,7 @@ class JobManager:
         job.primary_url = self.primary_url
         job.primary_data_dir = self.data_dir # so we know where to get output.zip from
         self.add_update_job_table(job)
-        job_queue = "model_runner:queues:%s" % job.model
+        job_queue = "modelrunner:queues:%s" % job.model
 
         logging.info("adding job %s to queue %s" % (job.uuid, job_queue))
         self.rdb.rpush(job_queue, job.uuid)
@@ -178,7 +178,7 @@ class JobManager:
         This is meant to be called in an infinite loop as part of a worker.  
         It blocks on waiting for job and while command is being run 
         """
-        job_queue = "model_runner:queues:%s" % model_name
+        job_queue = "modelrunner:queues:%s" % model_name
         logging.info("waiting for job on queue %s" % job_queue)
         result = self.rdb.blpop(job_queue)
         uuid = result[1]
@@ -189,7 +189,7 @@ class JobManager:
         # keep the worker_data_dir separate from primary
         job.worker_data_dir = self.data_dir 
         # primary_queue to notify primary server of any errors or completion
-        primary_queue = "model_runner:queues:" + self.primary_url
+        primary_queue = "modelrunner:queues:" + self.primary_url
 
         job_data_dir = os.path.join(self.data_dir, job.uuid)
         input_dir = os.path.join(job_data_dir, "input")
@@ -238,7 +238,7 @@ class JobManager:
         command_str = subprocess.list2cmdline(command_args)
         logging.info("running command %s" % command_str)
         popen_proc = subprocess.Popen(command_str, shell=True, stdout=job_data_log, stderr=job_data_log)
-        worker_queue = "model_runner:queues:" + self.worker_url
+        worker_queue = "modelrunner:queues:" + self.worker_url
         wk = WaitForKill(self.rdb, worker_queue, popen_proc, job.uuid)
         wk.start()
 
@@ -276,7 +276,7 @@ class JobManager:
         This is meant to be called in an infinite loop as part of a primary server  
         It blocks while waiting for finished jobs
         """
-        primary_queue = "model_runner:queues:" + self.primary_url
+        primary_queue = "modelrunner:queues:" + self.primary_url
         logging.info("waiting for finished jobs on queue %s" % primary_queue)
         result = self.rdb.blpop(primary_queue)
         uuid = result[1]
@@ -300,7 +300,7 @@ class JobManager:
         """
         Notify job worker that the job should be killed
         """
-        worker_queue = "model_runner:queues:" + job.worker_url
+        worker_queue = "modelrunner:queues:" + job.worker_url
         logging.info("sending message to kill job on %s" % job.worker_url)
         message = {'command': "KILL", 'job_uuid': job.uuid}
         self.rdb.rpush(worker_queue, pickle.dumps(message))
