@@ -3,7 +3,7 @@ import argparse
 
 host = "localhost"
 port = 6379
-queue_name = "model_runner:queue"
+queue_name = "modelrunner:queue"
 
 rdb = redis.Redis(host=host, port=port)
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
         
         # Update job
         # generate the key for this job
-        job_key = "model_runner:jobs:%s" % item[1]
+        job_key = "modelrunner:jobs:%s" % item[1]
         rdb.hset(job_key, "worker", worker)
 
         # NOTE:  without transactions, it's "possible" that the above job gets pulled from the queue
