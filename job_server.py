@@ -170,6 +170,10 @@ class JobHandler(tornado.web.RequestHandler):
             jobs.sort(key=lambda job: job.created, reverse=True)
             self.render("view_jobs.html", jobs=jobs)
            
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("index.html")
+
 if __name__ == "__main__":
 
     # so we can load config via cmd line args
@@ -187,7 +191,12 @@ if __name__ == "__main__":
                                 command_dict,
                                 config.options.worker_is_primary)
 
+    settings = {
+        "static_path": os.path.join(os.path.dirname(__file__), "static"),
+    }
+
     application = tornado.web.Application([
+            (r"/", MainHandler),
             (r"/jobs/submit", SubmitJobForm, dict(models=models)),
             (r"/jobs", JobHandler, dict(job_mgr=jm)),
             (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", JobHandler, dict(job_mgr=jm)),
@@ -195,7 +204,8 @@ if __name__ == "__main__":
             ], 
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             debug=config.options.debug, 
-            ui_modules={'JobOptions': JobOptionsModule}
+            ui_modules={'JobOptions': JobOptionsModule},
+            **settings
             )
 
     application.listen(config.options.port)

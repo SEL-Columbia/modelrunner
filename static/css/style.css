@@ -1,0 +1,90 @@
+h4 {
+  margin-top: 25px;
+}
+
+[class*="col-"] {
+  padding: 20px 40px;
+}
+
+hr {
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
+strong {
+  font-family: "ProximaNova-Bold";
+  font-weight: normal;
+}
+
+.baby-blue-bg {
+    background-color: #00AEEF;
+    color: #FFF;
+}
+
+.page-header {
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+  color: #231F20;
+}
+
+.page-header h3 {
+  padding-top:19px;
+}
+.hero-space {
+  text-align: center;
+}
+.hero-space img {
+  margin: 0 auto;
+}
+.main-content-container {
+  color: #231F20;
+}
+.main-content-container a {
+  color: #60c5eb;
+}
+.main-content-container a:hover {
+  color: #8dd6f1;
+}
+.main-content-container a.btn {
+  color: #231F20;
+}
+.main-content-container .qualifier {
+  font-size: 90%;
+  color: #BBBDBF;
+}
+.main-content-container .main-content-header {
+  padding: 0;
+}
+.main-content-container .main-content-header div {
+  padding: 30px 10%;
+  border-bottom: 1px solid #FFF;
+}
+.main-content-container .main-content-arrow {
+  background: url('../img/main_content_up_arrow.png') no-repeat;
+  background-position: bottom;
+  width: 100%;
+  height: 40px;
+}
+.main-content-container .main-content {
+  background: #FFF;
+}
+.main-content-container .main-content h3 {
+  margin-top: 0;
+}
+
+.btn-splash  {
+  background-color: #F0E918;
+  text-transform: uppercase;
+  border: none;
+  font-size: 12px;
+}
+
+.btn-splash:hover {
+  background-color: #CCC515;
+}
+
+.page-footer {
+  margin-top: 20px;
+  background-color: #fff;
+}

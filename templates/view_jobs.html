@@ -1,49 +1,63 @@
 {% extends "base.html" %}
+{% block css %}
+    <link rel="stylesheet" href="/static/css/style.css"/>
+{% end %}
 {% block body %}
-<ul class="nav nav-tabs" role="tablist">
-  <li class="active"><a href="/jobs">View</a></li>
-  <li><a href="/jobs/submit">Submit</a></li>
-</ul>
-<div id="message" class="alert alert-error">
+<nav class="navbar navbar-default baby-blue-bg" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">
+        <img src="/static/img/modelrunner_logo_sm.png" title="model runner" alt="model runner Logo" />
+      </a>
+    </div>
+  </div>
+</nav>
+<div class="container">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="active"><a href="/jobs">View</a></li>
+        <li><a href="/jobs/submit">Submit</a></li>
+    </ul>
+    <div id="message" class="alert alert-error">
+    </div>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th><th>Model</th><th>Created Date</th><th>Status</th><th>Options</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for job in jobs %}
+        <tr>
+            <td>{{ getattr(job, "name", "") }}</td>
+            <td>{{ getattr(job, "model", "") }}</td>
+            <td>{{ str(getattr(job, "created", "")) }}</td>
+            <td>{{ getattr(job, "status", "") }}</td>
+            <td>{% module JobOptions(job) %}</td>
+        </tr>
+        {% end %}
+        </tbody>
+    </table>
 </div>
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>Name</th><th>Model</th><th>Created Date</th><th>Status</th><th>Options</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for job in jobs %}
-      <tr>
-        <td>{{ getattr(job, "name", "") }}</td>
-        <td>{{ getattr(job, "model", "") }}</td>
-        <td>{{ str(getattr(job, "created", "")) }}</td>
-        <td>{{ getattr(job, "status", "") }}</td>
-        <td>{% module JobOptions(job) %}</td>
-      </tr>
-    {% end %}
-  </tbody>
-</table>
 {% end %}
 {% block js %}
 <script>
 $(document).ready(function(){ 
-    // handle ajax submit
-    $("a.ajax_link").click(function(e){
-       e.preventDefault(); 
+        // handle ajax submit
+        $("a.ajax_link").click(function(e){
+            e.preventDefault(); 
 
-       var url = $(this).attr('href');
-       $.ajax({
-            url: url,
-            success: function(data){
-                $("#message").html(data.message)
-            },
-            error: function(data){
-                $("#message").html(data.message)
-            },
-        });
-        return false;
-    });
+            var url = $(this).attr('href');
+            $.ajax({
+url: url,
+success: function(data){
+$("#message").html(data.message)
+},
+error: function(data){
+$("#message").html(data.message)
+},
 });
+            return false;
+            });
+        });
 </script>
 {% end %}

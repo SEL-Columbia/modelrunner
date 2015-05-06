@@ -8,13 +8,13 @@ If you have a model that takes an input file (or files) and returns an
 output file (or files) and runs in memory, you can expose it via the 
 web to a broader audience via Model Runner.  
 
-[![Build Status](https://travis-ci.org/SEL-Columbia/model_runner.svg?branch=master)](https://travis-ci.org/SEL-Columbia/model_runner.svg?branch=master)
+[![Build Status](https://travis-ci.org/SEL-Columbia/modelrunner.svg?branch=master)](https://travis-ci.org/SEL-Columbia/modelrunner.svg?branch=master)
 
 
 Architecture
 ------------
 
-![Diagram](http://sel-columbia.github.io/model_runner/diagram.png "diagram")
+![Diagram](http://sel-columbia.github.io/modelrunner/diagram.png "diagram")
 
 
 Components
@@ -22,7 +22,7 @@ Components
 
 - Primary Server
   
-    The server that hosts the model_runner REST API and manages jobs
+    The server that hosts the modelrunner REST API and manages jobs
 
 - Worker 
 
@@ -94,17 +94,17 @@ Worker Process
 
 Workers wait on 2 queues:
 
-1.  model_runner:queues:&lt;model&gt;
+1.  modelrunner:queues:&lt;model&gt;
 
   This is where it waits for jobs to run a specific model
 
-2.  model_runner:queues:&lt;worker_id&gt;
+2.  modelrunner:queues:&lt;worker_id&gt;
 
   This is where it waits for a job to be killed
 
 Additionally, the Primary waits on a queue:
 
-- model_runner:queues:&lt;primary_id&gt;
+- modelrunner:queues:&lt;primary_id&gt;
 
   This is where it waits to be notified of a finished job
 
@@ -114,10 +114,28 @@ Note:  Workers will log both info and error output which will be available via w
 Installation and Deployment
 ---------------------------
 
-See .travis.yml for details
+Deployment can be done via [fabric](http://www.fabfile.org) on Debian based distro's.
+There are several options for deployment ranging from a single server "dev" to multi-server "prod" setups.  
+
+Here are the basic steps (assumes you have a python environment with fabric installed locally):
+
+1.  Bring up an Ubuntu/Debian instance(s) (henceforth referred to as "your_server")
+
+2.  Create a user named 'mr' to run modelrunner under on your_server 
+
+3.  On your local machine, clone this repo and cd into the modelrunner directory (if not already done)
+
+4.  Setup the server via `fab -H mr@your_server setup:config_file=your_config.ini` (see sample config.ini for a guide)
+
+5.  Start the server via `fab -H mr@your_server start:configuration=<worker|primary>,environment=<dev|prod>` 
+
+For production deployments, we suggest using [nginx](http://wiki.nginx.org) as your primary static file server.
+See the sample devops/modelrunner.nginx config file.
+
+See fabfile.py for more details and options.
 
 Development & Testing
 -----------
 
-Once you've made changes to your branch run `./testing/test_full.sh` and
+Once you've made changes to your branch, start up a primary and worker, run `./testing/test_full.sh` and
 ensure it's exit code is 0.

@@ -24,5 +24,5 @@ if __name__ == "__main__":
                                 config.options.worker_is_primary)
 
     for uuid in [l.rstrip() for l in sys.stdin.readlines()]:
-        jm.rdb.hdel("model_runner:jobs", uuid)
+        jm.rdb.hdel("modelrunner:jobs", uuid)
 

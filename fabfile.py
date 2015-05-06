@@ -9,12 +9,12 @@ DEFAULTS = {
     'configuration': 'primary', 
     'config_file': 'config.ini',
     'environment': 'dev', 
-    'project': 'model_runner',
-    'modelrunner_repo': 'https://github.com/SEL-Columbia/model_runner',
+    'project': 'modelrunner',
+    'modelrunner_repo': 'https://github.com/SEL-Columbia/modelrunner',
     'modelrunner_branch': 'master'
     }
 
-def run_in_conda_env(command, conda_env="model_runner"):
+def run_in_conda_env(command, conda_env="modelrunner"):
     d = {
         'conda_env': conda_env,
         'conda_path': os.path.join(env.home, "miniconda", "bin"),
@@ -59,21 +59,36 @@ def setup(**args):
     """
     setup_env(**args)
     print("baseline setup on %(host_string)s" % env)
-    sudo("apt-get -y install git curl")
+    sudo("apt-get -y install git curl", warn_only=True)
 
-    update_model_runner()
+    update_modelrunner()
    
     # setup conda
-    run("./model_runner/devops/setup.sh")
+    run("./modelrunner/devops/setup.sh")
 
-    # create environ for model_runner
-    run_conda_enabled("./model_runner/devops/setup_model_runner.sh")
+    # create environ for modelrunner
+    run_conda_enabled("./modelrunner/devops/setup_modelrunner.sh")
 
-    # setup sequencer (not truly needed on primary, but keep 'em consistent for now)
-    run_conda_enabled("./model_runner/devops/setup_sequencer.sh")
+    # setup sequencer and networker (not truly needed on primary, but keep 'em consistent for now)
+    run_conda_enabled("./modelrunner/devops/setup_sequencer.sh")
+    run_conda_enabled("./modelrunner/devops/setup_networker.sh")
 
 @task
-def update_model_runner(**args):
+def setup_model(**args):
+    """
+    Install or update the deployment of a model on a machine
+    (should NOT wipeout any data)
+    Assumes machine has been setup with mr user under /home/mr
+    """
+    setup_env(**args)
+
+    # find setup file
+    setup_script = "./modelrunner/devops/setup_{model}.sh".format(model=args['model'])
+    # setup sequencer and networker (not truly needed on primary, but keep 'em consistent for now)
+    run_conda_enabled(setup_script)
+
+@task
+def update_modelrunner(**args):
     """
     Updates the model runner code base and devops scripts
     """
@@ -83,13 +98,13 @@ def update_model_runner(**args):
     # don't rely on remote scripts from repo, instead push local setup scripts
     # to run
     with settings(warn_only=True):
-        if run("test -d ./model_runner/devops").failed:
-            run("mkdir -p ./model_runner/devops")
+        if run("test -d ./modelrunner/devops").failed:
+            run("mkdir -p ./modelrunner/devops")
         
-    put("./devops/*.sh", "./model_runner/devops", mode=0755) 
+    put("./devops/*.sh", "./modelrunner/devops", mode=0755) 
 
      # deploy appropriate config file
-    put(env.config_file, './model_runner/config.ini')
+    put(env.config_file, './modelrunner/config.ini')
 
 
 def start_primary():
