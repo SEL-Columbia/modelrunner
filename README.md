@@ -75,7 +75,7 @@ API (Primary Server)
 
     Kill a running job
     ```
-    http://localhost:8080/jobs/$job_id
+    http://localhost:8080/jobs/$job_id/kill
 
     {
         "id": "df11e13d-87d5-433b-ad28-9b27b95f6e3e",
