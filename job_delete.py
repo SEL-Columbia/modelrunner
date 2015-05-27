@@ -1,4 +1,3 @@
-import tornado
 import sys
 
 # setup config options
@@ -16,8 +15,8 @@ if __name__ == "__main__":
     # get the command_ keys
     command_dict = config.options.group_dict("model_command")
 
-    jm = job_manager.JobManager(config.options.redis_url, 
-                                config.options.primary_url, 
+    jm = job_manager.JobManager(config.options.redis_url,
+                                config.options.primary_url,
                                 config.options.worker_url,
                                 config.options.data_dir,
                                 command_dict,
@@ -25,4 +24,3 @@ if __name__ == "__main__":
 
     for uuid in [l.rstrip() for l in sys.stdin.readlines()]:
         jm.rdb.hdel("modelrunner:jobs", uuid)
-
