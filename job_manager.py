@@ -15,8 +15,15 @@ import zipfile
 from zipfile import ZipFile
 
 
-# utility functions
 def fetch_file_from_url(url, destination_dir, file_name=None):
+    """
+    Utility function for retrieving a remote file from a url
+
+    Args:
+        url (str):  http based url for file to retrieve
+        destination_dir (str):  local dir to place file in
+        file_name (str):  name of local copy of file (if None glean from url)
+    """
 
     # http://stackoverflow.com/questions/22676/how-do-i-download-a-file-over-http-using-python
     if(not file_name):
@@ -42,6 +49,13 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
 
 
 def zipdir(path, zip_file_name):
+    """
+    Recursively zip up a directory
+
+    Args:
+        path (str):  local path of dir to be zipped
+        zip_file_name (str):  name of zip to be created
+    """
 
     output_zip = ZipFile(zip_file_name, 'w')
     for root, dirs, files in os.walk(path):
@@ -58,6 +72,13 @@ def zipdir(path, zip_file_name):
 class WaitForKill(threading.Thread):
     """
     Thread to wait for kill messages while process is running
+
+    Attributes:
+        redis_obj (redis.Redis):  Redis connection instance
+        worker_queue (str):  name of worker queue to listen for commands
+        popen_proc (subprocess):  subprocess running job to be managed
+        job_uuid (str):  uuid of job managed by this thread
+
     """
 
     def __init__(self, redis_obj, worker_queue, popen_proc, job_uuid):
@@ -68,9 +89,16 @@ class WaitForKill(threading.Thread):
         self.job_uuid = job_uuid
 
     def run(self):
-        # handle case where kill message for "old" job is submitted
-        # by pulling off messages until one associated with 'this' job is found
-        # (otherwise, we might kill new jobs via messages for old jobs)
+        """
+        Wait for commands associated with this job
+
+        handle case where kill message for "old" job is submitted
+        by pulling off messages until one associated with 'this' job is found
+        (otherwise, we might kill new jobs via messages for old jobs)
+        
+        When job is completed, a BREAK message should be sent to 
+        stop this thread.  
+        """
         while(True):
             # block on queue and unpickle message dict when it arrives
             raw_message = self.redis_obj.blpop(self.worker_queue)[1]
@@ -99,6 +127,24 @@ class WaitForKill(threading.Thread):
 
 class JobManager:
 
+    """
+    Class to manage running jobs and synchronizing associated data between
+    *Primary* and *Worker* servers
+
+    Primary server:  Main entry point for submitting jobs and for worker sync
+    Worker server:  Retrieves jobs from Primary, runs them and makes results
+        available to Primary with a notification
+
+    Attributes:
+        rdb (redis.Redis):  Redis DB connection
+        primary_url (str):  url of Primary server
+        worker_url (str):  url of Worker server
+        model_commands (dict str -> str):  model -> command to run model via
+        data_dir (str):  path where job data should be stored
+
+    """
+
+    # Job Statuses
     STATUS_CREATED   = "CREATED"
     STATUS_QUEUED    = "QUEUED"
     STATUS_RUNNING   = "RUNNING"
@@ -106,7 +152,6 @@ class JobManager:
     STATUS_COMPLETE  = "COMPLETE"
     STATUS_FAILED    = "FAILED"
 
-    """ Manage running and syncing job data between primary and workers """
     def __init__(
             self,
             redis_url,
@@ -133,36 +178,54 @@ class JobManager:
             os.mkdir(data_dir)
         self.data_dir = data_dir
 
-    # wrapper for redis to pickle input
+    # <wrappers> (for storing/retrieveing pickled objects in Redis) 
     def hset(self, hash_name, key, obj):
         pickled_obj = pickle.dumps(obj)
         self.rdb.hset(hash_name, key, pickled_obj)
 
-    # wrapper for redis to unpickle
     def hget(self, hash_name, key):
         pickled_obj = self.rdb.hget(hash_name, key)
         return pickle.loads(pickled_obj)
 
-    # wrapper for redis to unpickle all
     def hgetall(self, hash_name):
         pickled_objs = self.rdb.hgetall(hash_name)
         return [pickle.loads(pobj[1]) for pobj in pickled_objs.items()]
+    # </wrappers>
 
     def get_jobs(self):
+        """
+        Get all jobs from Redis
+        """
         return self.hgetall("modelrunner:jobs")
 
     def get_job(self, job_uuid):
+        """
+        Get specific job
+
+        Args:
+            job_uuid (str):  job id
+        """
         return self.hget("modelrunner:jobs", job_uuid)
 
     def add_update_job_table(self, job):
+        """
+        Add or update a job in Redis
+
+        Args:
+            job (modelrunner.Job):  job instance
+        """
         self.hset("modelrunner:jobs", job.uuid, job)
 
     def enqueue(self, job, job_data_blob=None, job_data_url=None):
         """
-        Run from 'primary'
-        write job data to file and queue up for processing
-        job_data_blob is a blob of a zip file to be written to disk
-        job_data_url is the url of a zip file to fetched and written to disk
+        Write job data to file and queue up for processing
+
+        Run by Primary server
+
+        Args:
+            job_data_blob (blob):  blob of a zip file to be written to disk
+            job_data_url (str):  the url of a zip file to fetched         
+
         """
 
         # only allow job data as blob or url
@@ -195,10 +258,16 @@ class JobManager:
 
     def wait_for_new_jobs(self, model_name):
         """
-        Run from 'worker'
-        listen for jobs to run as they come in on the model based queue
+        Listen for jobs to run as they come in on the model based queue
+
+        Run by Worker
+
         This is meant to be called in an infinite loop as part of a worker.
         It blocks on waiting for job and while command is being run
+
+        Args:
+            model_name (str):  name of model this worker will run
+
         """
         job_queue = "modelrunner:queues:%s" % model_name
         logging.info("waiting for job on queue %s" % job_queue)
@@ -298,8 +367,10 @@ class JobManager:
 
     def wait_for_finished_jobs(self):
         """
-        Run from 'primary'
-        listen for jobs that have finished (by workers)
+        Listen for jobs that have finished (by workers)
+        
+        Run by Primary
+
         This is meant to be called in an infinite loop in the primary server
         It blocks while waiting for finished jobs
         """
@@ -330,6 +401,11 @@ class JobManager:
     def kill_job(self, job):
         """
         Notify job worker that the job should be killed
+
+        Run by Primary
+
+        Args:
+            job (modelrunner.Job):  job instance
         """
         worker_queue = "modelrunner:queues:" + job.worker_url
         logging.info("sending message to kill job on %s" % job.worker_url)
@@ -374,8 +450,17 @@ class JobManager:
 
 
 class Job:
+    """ 
+    Maintain the state of a ModelRunner Job 
+    
+    Attributes:
+        model (str):  name of model job should run
+        uuid (str):  unique uuid4 string id'ing job
+        created (datetime):  time created
+        status (str):  One of JobManager defined STATUS constants
 
-    """ Maintain the state of a ModelRunner Job """
+    """
+
     def __init__(self, model):
         self.model = model
         self.uuid = str(uuid.uuid4())

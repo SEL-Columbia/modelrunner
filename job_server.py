@@ -64,7 +64,11 @@ class JobKillHandler(tornado.web.RequestHandler):
     def initialize(self, job_mgr):
         """
         init with the Manager instance
+
+        Args:
+            job_mgr (modelrunner.JobManager):  JobManager instance
         """
+
         self.job_mgr = job_mgr
 
     def get(self, job_uuid):
@@ -92,7 +96,11 @@ class JobHandler(tornado.web.RequestHandler):
     def initialize(self, job_mgr):
         """
         init with the Manager instance
+
+        Args:
+            job_mgr (modelrunner.JobManager):  JobManager instance
         """
+
         self.job_mgr = job_mgr
 
     @tornado.gen.coroutine
@@ -142,16 +150,22 @@ class JobHandler(tornado.web.RequestHandler):
         self.write(response_dict)
         self.finish()
 
-    """
-    Get the list of jobs
-    """
     def get(self, job_uuid=None):
+        """
+        Get or view jobs
+
+        Args:
+            job_uuid (str):  If not None, the job id to retrieve json for
+        """
+
         if(job_uuid):  # single job info
             job = self.job_mgr.get_job(job_uuid)
             json_job = DateTimeEncoder().encode(job.__dict__)
             self.write(json_job)
             self.finish()
-        else:  # TODO:  refactor to return only job json
+        else:  
+            # TODO:  refactor to return only job json
+            #        for js to render
             jobs = self.job_mgr.get_jobs()
             # order descending
             jobs.sort(key=lambda job: job.created, reverse=True)
@@ -159,6 +173,9 @@ class JobHandler(tornado.web.RequestHandler):
 
 
 class JobOptionsModule(tornado.web.UIModule):
+    """
+    Helper class for simplifying job rendering in tornado html templates
+    """
 
     def get_data_dir(self, job, worker_dir=False):
         if(worker_dir):
@@ -184,6 +201,13 @@ class JobOptionsModule(tornado.web.UIModule):
                 job.uuid + "/output.zip"
 
     def render(self, job):
+        """
+        main method for rendering job links based on job status
+
+        Args:
+            job (modelrunner.Job):  job instance to render links for
+        """
+
         href_templ = "<a href=%s>%s</a>"
         # may be confusing, but we need to make kill links ajax
         href_ajax_templ = "<a class='ajax_link' href=%s>%s</a>"
@@ -205,6 +229,10 @@ class JobOptionsModule(tornado.web.UIModule):
 
 
 class MainHandler(tornado.web.RequestHandler):
+    """
+    root request handler for splash page
+    """
+    
     def get(self):
         self.render("index.html")
 
