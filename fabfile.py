@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # fabfile for managing modelrunner deployments
 import os
 

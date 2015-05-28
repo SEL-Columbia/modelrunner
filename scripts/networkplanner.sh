@@ -1,4 +1,5 @@
 #!/bin/bash
+# Run networkplanner via networker given input, output and config
 
 input_dir=$1
 output_dir=$2

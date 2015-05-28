@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+Script to list job data from Redis DB
+"""
+
 import csv
 import sys
 import config

@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+Run Sequencer with specific model
+"""
+
 import argparse
 import os
 

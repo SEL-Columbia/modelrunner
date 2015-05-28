@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Primary Server 
+
+Script to wait for finished jobs from workers and fetch results
+
+See config.py or pass --help to command for command line args
+"""
+
 # setup config options
 import config
 from tornado.options import parse_command_line, parse_config_file

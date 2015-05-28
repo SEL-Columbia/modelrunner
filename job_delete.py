@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+"""
+Script to delete list of \n delimited job ids
+"""
 import sys
 
 # setup config options

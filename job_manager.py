@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 """
 Module for managing job running and sync between primary and workers
 """
+
 import os
 import uuid
 import datetime
