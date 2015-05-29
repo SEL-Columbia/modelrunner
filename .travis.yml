@@ -4,7 +4,7 @@ python:
 before_install:
   - sudo apt-get update
 install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-3.6.0-Linux-x86_64.sh -O miniconda.sh
+  - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -13,14 +13,15 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   # setup modelrunner
-  - conda create -n modelrunner --file requirements.txt 
+  - conda create -n modelrunner python=2.7
+  - conda install --yes -c sel -n modelrunner modelrunner
 services:
   - redis-server
 before_script:
   # setup primary, worker(s)
   - source activate modelrunner
-  - ./devops/start_primary.sh
-  - ./devops/start_worker.sh
+  - ./scripts/start_primary.sh
+  - ./scripts/start_worker.sh
 script:
   - echo "in script"
   - sleep 1

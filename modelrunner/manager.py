@@ -16,6 +16,9 @@ import subprocess
 import zipfile
 from zipfile import ZipFile
 
+# setup log
+logger = logging.getLogger('modelrunner')
+
 
 def fetch_file_from_url(url, destination_dir, file_name=None):
     """
@@ -34,7 +37,7 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
     u = urllib2.urlopen(url)
     destination_file = os.path.join(destination_dir, file_name)
     f = open(destination_file, 'wb')
-    logging.info("Downloading from url {}".format(url))
+    logger.info("Downloading from url {}".format(url))
 
     file_size_dl = 0
     block_sz = 8192
@@ -46,7 +49,7 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
         file_size_dl += len(buffer)
         f.write(buffer)
 
-    logging.info("Finished %s bytes from url %s" % (file_size_dl, url))
+    logger.info("Finished %s bytes from url %s" % (file_size_dl, url))
     f.close()
 
 
@@ -73,7 +76,7 @@ def zipdir(path, zip_file_name):
 
 class WaitForKill(threading.Thread):
     """
-    Thread to wait for kill messages while process is running
+    Thread used by JobManager to wait for kills while process is running
 
     Attributes:
         redis_obj (redis.Redis):  Redis connection instance
@@ -97,9 +100,9 @@ class WaitForKill(threading.Thread):
         handle case where kill message for "old" job is submitted
         by pulling off messages until one associated with 'this' job is found
         (otherwise, we might kill new jobs via messages for old jobs)
-        
-        When job is completed, a BREAK message should be sent to 
-        stop this thread.  
+
+        When job is completed, a BREAK message should be sent to
+        stop this thread.
         """
         while(True):
             # block on queue and unpickle message dict when it arrives
@@ -107,24 +110,24 @@ class WaitForKill(threading.Thread):
             message = pickle.loads(raw_message)
             job_uuid = message['job_uuid']
             command = message['command']
-            logging.info("Received command {} for job_uuid {} on queue {}".
-                         format(command, job_uuid, self.worker_queue))
+            logger.info("Received command {} for job_uuid {} on queue {}".
+                        format(command, job_uuid, self.worker_queue))
 
             if(job_uuid == self.job_uuid):
                 if(command == "KILL"):
-                    logging.info("Terminating pid {}".
-                                 format(self.popen_proc.pid))
+                    logger.info("Terminating pid {}".
+                                format(self.popen_proc.pid))
                     self.popen_proc.terminate()
 
                 if(command == "BREAK"):
-                    logging.info("Stop waiting for commands for job {}".
-                                 format(self.job_uuid))
+                    logger.info("Stop waiting for commands for job {}".
+                                format(self.job_uuid))
 
                 # we've handled message for 'this' job so exit loop (& thread)
                 break
             else:
-                logging.info("Command {} for OLD job_uuid {} ignored".
-                             format(command, job_uuid))
+                logger.info("Command {} for OLD job_uuid {} ignored".
+                            format(command, job_uuid))
 
 
 class JobManager:
@@ -180,7 +183,7 @@ class JobManager:
             os.mkdir(data_dir)
         self.data_dir = data_dir
 
-    # <wrappers> (for storing/retrieveing pickled objects in Redis) 
+    # <wrappers> (for storing/retrieveing pickled objects in Redis)
     def hset(self, hash_name, key, obj):
         pickled_obj = pickle.dumps(obj)
         self.rdb.hset(hash_name, key, pickled_obj)
@@ -224,9 +227,12 @@ class JobManager:
 
         Run by Primary server
 
+        Note:  This should be run async wrt a web server as it will block
+            on fetching/writing data
+
         Args:
             job_data_blob (blob):  blob of a zip file to be written to disk
-            job_data_url (str):  the url of a zip file to fetched         
+            job_data_url (str):  the url of a zip file to fetched
 
         """
 
@@ -239,14 +245,14 @@ class JobManager:
 
         job_data_file = os.path.join(job_data_dir, "input.zip")
         if(job_data_blob):
-            logging.info("writing input file for job to {}".
-                         format(job_data_file))
+            logger.info("writing input file for job to {}".
+                        format(job_data_file))
             file_handle = open(job_data_file, 'wb')
             file_handle.write(job_data_blob)
             file_handle.close()
         else:
-            logging.info("retrieving input file for job and writing to {}".
-                         format(job_data_file))
+            logger.info("retrieving input file for job and writing to {}".
+                        format(job_data_file))
             fetch_file_from_url(job_data_url, job_data_dir, "input.zip")
 
         # add to global job list then queue it to be run
@@ -255,7 +261,7 @@ class JobManager:
         self.add_update_job_table(job)
         job_queue = "modelrunner:queues:%s" % job.model
 
-        logging.info("adding job %s to queue %s" % (job.uuid, job_queue))
+        logger.info("adding job %s to queue %s" % (job.uuid, job_queue))
         self.rdb.rpush(job_queue, job.uuid)
 
     def wait_for_new_jobs(self, model_name):
@@ -272,7 +278,7 @@ class JobManager:
 
         """
         job_queue = "modelrunner:queues:%s" % model_name
-        logging.info("waiting for job on queue %s" % job_queue)
+        logger.info("waiting for job on queue %s" % job_queue)
         result = self.rdb.blpop(job_queue)
         uuid = result[1]
         job = self.get_job(uuid)
@@ -296,7 +302,7 @@ class JobManager:
 
         # setup subproc to run model command and output to local job log
         # AND the associated 'kill thread'
-        logging.info("preparing input for job %s" % job.uuid)
+        logger.info("preparing input for job %s" % job.uuid)
         job_data_log = open(os.path.join(job_data_dir, "job_log.txt"), 'w')
 
         # catch data prep exceptions so that if the job fails, we don't
@@ -306,7 +312,7 @@ class JobManager:
         except Exception as e:
             # Fail the job, log it, notify primary and get outta here
             failure_msg = "Failed prepping data: %s" % e
-            logging.info(failure_msg)
+            logger.info(failure_msg)
             job_data_log.write(failure_msg)
             job.status = JobManager.STATUS_FAILED
             self.add_update_job_table(job)
@@ -316,7 +322,7 @@ class JobManager:
 
         # Input has been prepped so start the job
         command = self.model_commands[model_name]
-        logging.info("starting job %s" % job.uuid)
+        logger.info("starting job %s" % job.uuid)
         # update job status
         job.status = JobManager.STATUS_RUNNING
         self.add_update_job_table(job)
@@ -328,7 +334,7 @@ class JobManager:
         command_args.append(os.path.realpath(input_dir))
         command_args.append(os.path.realpath(output_dir))
         command_str = subprocess.list2cmdline(command_args)
-        logging.info("running command %s" % command_str)
+        logger.info("running command %s" % command_str)
         popen_proc = subprocess.Popen(
                         command_str,
                         shell=True,
@@ -343,20 +349,20 @@ class JobManager:
         return_code = popen_proc.wait()
         # close job log
         job_data_log.close()
-        logging.info("finished job {} with return code {}".
-                     format(job.uuid, return_code))
+        logger.info("finished job {} with return code {}".
+                    format(job.uuid, return_code))
 
         if (wk.isAlive()):
             # send a message to stop the wait for kill thread
             message = {'command': "BREAK", 'job_uuid': job.uuid}
             self.rdb.rpush(worker_queue, pickle.dumps(message))
 
-        logging.info("finished processing job, notifying primary server {}".
-                     format(self.primary_url))
+        logger.info("finished processing job, notifying primary server {}".
+                    format(self.primary_url))
 
         # update job status (use command return code for now)
         if(return_code == 0):
-            logging.info("zipping output of job %s" % job.uuid)
+            logger.info("zipping output of job %s" % job.uuid)
             self._prep_output(job)
             job.status = JobManager.STATUS_PROCESSED
         else:
@@ -370,23 +376,23 @@ class JobManager:
     def wait_for_finished_jobs(self):
         """
         Listen for jobs that have finished (by workers)
-        
+
         Run by Primary
 
         This is meant to be called in an infinite loop in the primary server
         It blocks while waiting for finished jobs
         """
         primary_queue = "modelrunner:queues:" + self.primary_url
-        logging.info("waiting for finished jobs on queue %s" % primary_queue)
+        logger.info("waiting for finished jobs on queue %s" % primary_queue)
         result = self.rdb.blpop(primary_queue)
         uuid = result[1]
         job = self.get_job(uuid)
 
-        logging.info("job {} finished with status of {}".
-                     format(job.uuid, job.status))
+        logger.info("job {} finished with status of {}".
+                    format(job.uuid, job.status))
         if(job.status == JobManager.STATUS_PROCESSED):
             if(not self.worker_is_primary()):  # need to get output
-                logging.info("retrieving output for job {}".format(job.uuid))
+                logger.info("retrieving output for job {}".format(job.uuid))
                 output_url = job.worker_url + "/" +\
                     job.worker_data_dir + "/" +\
                     job.uuid + "/output.zip"
@@ -410,7 +416,7 @@ class JobManager:
             job (modelrunner.Job):  job instance
         """
         worker_queue = "modelrunner:queues:" + job.worker_url
-        logging.info("sending message to kill job on %s" % job.worker_url)
+        logger.info("sending message to kill job on %s" % job.worker_url)
         message = {'command': "KILL", 'job_uuid': job.uuid}
         self.rdb.rpush(worker_queue, pickle.dumps(message))
 
@@ -427,7 +433,7 @@ class JobManager:
                         job.primary_data_dir + "/" +\
                         job.uuid + "/input.zip"
 
-            logging.info("fetching data from {}".format(input_url))
+            logger.info("fetching data from {}".format(input_url))
             fetch_file_from_url(input_url, job_data_dir)
 
         # if we're here, we just need to unzip the input file
@@ -452,9 +458,9 @@ class JobManager:
 
 
 class Job:
-    """ 
-    Maintain the state of a ModelRunner Job 
-    
+    """
+    Maintain the state of a ModelRunner Job
+
     Attributes:
         model (str):  name of model job should run
         uuid (str):  unique uuid4 string id'ing job

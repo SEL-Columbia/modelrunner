@@ -130,9 +130,9 @@ def start_primary():
     with cd(env.project_directory):
         # run_in_conda_env("nohup redis-server > redis.log &")
         if(env.environment == "prod"):
-            run_in_conda_env("./devops/start_primary_production.sh")
+            run_in_conda_env("./scripts/start_primary_production.sh")
         else:
-            run_in_conda_env("./devops/start_primary.sh")
+            run_in_conda_env("./scripts/start_primary.sh")
 
 
 def start_worker():
@@ -140,7 +140,7 @@ def start_worker():
     Start the worker server
     """
     with cd(env.project_directory):
-        run_in_conda_env("./devops/start_worker.sh")
+        run_in_conda_env("./scripts/start_worker.sh")
 
 
 @task
