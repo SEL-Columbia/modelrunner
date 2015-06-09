@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source $HOME/.bash_profile
+
 # clear out environment
 rm -rf $HOME/miniconda/envs/modelrunner
 

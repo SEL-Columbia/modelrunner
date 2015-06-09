@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt-get install -y curl
+
 if ! conda &> /dev/null
 then
     mkdir -p build; cd build
@@ -12,6 +14,7 @@ then
     ./Miniconda-latest-Linux-x86_64.sh -b -p $HOME/miniconda
     cd
     grep "$HOME/miniconda/bin:" .bashrc || echo "export PATH=\"$HOME/miniconda/bin:$PATH\"" >> .bashrc
+    grep "$HOME/miniconda/bin:" .bash_profile || echo "export PATH=\"$HOME/miniconda/bin:$PATH\"" >> .bash_profile
 fi
 
 # bashrc may not have been sourced if run from remote
