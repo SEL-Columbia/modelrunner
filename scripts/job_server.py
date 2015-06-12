@@ -8,7 +8,6 @@ Script to handle web interactions via tornado
 See config.py or pass --help to command for command line args
 """
 
-import os
 import sys
 import logging
 from modelrunner import config
@@ -46,7 +45,7 @@ jm = mr.JobManager(config.options.redis_url,
                    config.options.worker_is_primary)
 
 settings = {
-    "static_path": os.path.join(os.path.dirname(__file__), "static"),
+    "static_path": config.options.static_path,
 }
 
 application = tornado.web.Application([
@@ -58,7 +57,7 @@ application = tornado.web.Application([
         (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill",
             server.JobKillHandler, dict(job_mgr=jm)),
         ],
-        template_path=os.path.join(os.path.dirname(__file__), "templates"),
+        template_path=config.options.template_path,
         debug=config.options.debug,
         ui_modules={'JobOptions': server.JobOptionsModule},
         **settings

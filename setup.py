@@ -19,8 +19,8 @@ setup(
     description="System for managing long model runs",
     long_description=open("README.md").read(),
     url='https://github.com/SEL-Columbia/modelrunner',
-    install_requires=required, 
-    scripts = ['scripts/job_server.py', 
-               'scripts/job_worker.py',
-               'scripts/job_primary.py']
+    install_requires=required,
+    scripts=['scripts/job_server.py',
+             'scripts/job_worker.py',
+             'scripts/job_primary.py']
 )

@@ -1,2 +1,5 @@
 tornado
 futures
+# only for dev environ
+# redis
+# redis-py

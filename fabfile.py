@@ -21,9 +21,8 @@ def run_in_conda_env(command, conda_env="modelrunner"):
         'conda_path': os.path.join(env.home, "miniconda", "bin"),
         'command': command
     }
-    run("PATH=%(conda_path)s:$PATH && " +
-        "source activate %(conda_env)s && " +
-        "%(command)s" % d,
+    run("PATH={conda_path}:$PATH && source activate {conda_env} && {command}"
+        .format(**d),
         pty=False)
 
 
@@ -32,13 +31,13 @@ def run_conda_enabled(command):
         'conda_path': os.path.join(env.home, "miniconda", "bin"),
         'command': command
     }
-    run("PATH=%(conda_path)s:$PATH && %(command)s" % d, pty=False)
+    run("PATH={conda_path}:$PATH && {command}".format(**d), pty=False)
 
 
 def stop():
     print("stopping modelrunner processes")
     with cd(env.project_directory):
-        run("./devops/stop_processes.sh", pty=False)
+        run("./scripts/stop_processes.sh", pty=False)
 
 
 setup_called = False
@@ -68,7 +67,7 @@ def setup(**args):
     Assumes machine has been setup with mr user under /home/mr
     """
     setup_env(**args)
-    print("baseline setup on %(host_string)s" % env)
+    print("baseline setup on {host_string}".format(**env))
     sudo("apt-get -y install git curl", warn_only=True)
 
     update_modelrunner()
@@ -114,10 +113,11 @@ def update_modelrunner(**args):
     # don't rely on remote scripts from repo, instead push local setup scripts
     # to run
     with settings(warn_only=True):
-        if run("test -d ./modelrunner/devops").failed:
-            run("mkdir -p ./modelrunner/devops")
+        run("mkdir -p ./modelrunner/devops")
+        run("mkdir -p ./modelrunner/scripts")
 
     put("./devops/*.sh", "./modelrunner/devops", mode=0o755)
+    put("./scripts/*.sh", "./modelrunner/scripts", mode=0o755)
 
     # deploy appropriate config file
     put(env.config_file, './modelrunner/config.ini')

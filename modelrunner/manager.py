@@ -4,8 +4,9 @@ Module for managing job running and sync between primary and workers
 """
 
 import os
-import uuid
+from uuid import uuid4
 import datetime
+import json
 import redis
 import re
 import pickle
@@ -183,18 +184,19 @@ class JobManager:
             os.mkdir(data_dir)
         self.data_dir = data_dir
 
-    # <wrappers> (for storing/retrieveing pickled objects in Redis)
-    def hset(self, hash_name, key, obj):
-        pickled_obj = pickle.dumps(obj)
-        self.rdb.hset(hash_name, key, pickled_obj)
+    # <wrappers> (for storing/retrieveing jobs in Redis)
+    def hset(self, hash_name, key, job):
+        json_job = json.dumps(job, cls=JobEncoder)
+        self.rdb.hset(hash_name, key, json_job)
 
     def hget(self, hash_name, key):
-        pickled_obj = self.rdb.hget(hash_name, key)
-        return pickle.loads(pickled_obj)
+        json_job = self.rdb.hget(hash_name, key)
+        return json.loads(json_job, object_hook=decode_job)
 
     def hgetall(self, hash_name):
-        pickled_objs = self.rdb.hgetall(hash_name)
-        return [pickle.loads(pobj[1]) for pobj in pickled_objs.items()]
+        json_jobs = self.rdb.hgetall(hash_name)
+        return [json.loads(json_job[1], object_hook=decode_job) 
+                for json_job in json_jobs.items()]
     # </wrappers>
 
     def get_jobs(self):
@@ -463,14 +465,60 @@ class Job:
 
     Attributes:
         model (str):  name of model job should run
+        name (str):  name of job
         uuid (str):  unique uuid4 string id'ing job
-        created (datetime):  time created
+        created (datetime|str):  time created
+            if its a string, should be in iso format and will be
+            cast to datetime
         status (str):  One of JobManager defined STATUS constants
+        primary_url (str):  The URL of the primary server for the job
+        worker_url (str):  URL of the worker server for the job
+        primary_data_dir (str):  path on primary server holding job data
+        worker_data_dir (str):  path on worker server holding job data
 
     """
 
-    def __init__(self, model):
+    def __init__(self,
+                 model=None,
+                 name=None,
+                 uuid=None,
+                 created=None,
+                 status=JobManager.STATUS_CREATED,
+                 primary_url=None,
+                 worker_url=None,
+                 primary_data_dir=None,
+                 worker_data_dir=None):
+
         self.model = model
-        self.uuid = str(uuid.uuid4())
-        self.created = datetime.datetime.utcnow()
-        self.status = JobManager.STATUS_CREATED
+        self.name = name
+        self.uuid = uuid if uuid else str(uuid4())
+        # allow created to be an iso formatted string
+        # that we cast to datetime.datetime
+        if isinstance(created, basestring):
+            created = datetime.datetime.strptime(created,
+                                                 "%Y-%m-%dT%H:%M:%S.%f")
+        self.created = created if created else datetime.datetime.utcnow()
+        self.status = status
+        self.primary_url = primary_url
+        self.worker_url = worker_url
+        self.primary_data_dir = primary_data_dir
+        self.worker_data_dir = worker_data_dir
+
+
+class JobEncoder(json.JSONEncoder):
+    """
+    Encode Job as something that can be json serialized
+    """
+    def default(self, obj):
+        if isinstance(obj, Job):
+            return obj.__dict__
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
+
+
+def decode_job(dict):
+    """
+    Decode a job from a dict (useful for JSON decoding)
+    """
+    return Job(**dict)

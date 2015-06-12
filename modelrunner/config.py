@@ -7,6 +7,7 @@ Use tornado.options as it seems pretty friendly
 These can be overridden via parse_config_file and parse_command_line
 """
 
+import os
 from tornado.options import define, options
 
 define("config_file", default="config.ini", help="config file for modelrunner")
@@ -31,6 +32,14 @@ define(
     "worker_is_primary",
     default=True,
     help="Whether worker and primary are one")
+define(
+    "template_path",
+    default=os.path.join(os.path.curdir, "templates"),
+    help="directory where html template files reside")
+define(
+    "static_path",
+    default=os.path.join(os.path.curdir, "static"),
+    help="directory where static web files reside")
 define(
     "sequencer",
     default="./sequencer.sh",
