@@ -1,18 +1,19 @@
+# -*- coding: utf-8 -*-
 # fabfile for managing modelrunner deployments
 import os
 
 from fabric.api import task, env, run, settings, cd, put, sudo
-import fabric
 
 DEFAULTS = {
     'home': '/home/mr',
-    'configuration': 'primary', 
+    'configuration': 'primary',
     'config_file': 'config.ini',
-    'environment': 'dev', 
+    'environment': 'dev',
     'project': 'modelrunner',
     'modelrunner_repo': 'https://github.com/SEL-Columbia/modelrunner',
     'modelrunner_branch': 'master'
     }
+
 
 def run_in_conda_env(command, conda_env="modelrunner"):
     d = {
@@ -20,7 +21,9 @@ def run_in_conda_env(command, conda_env="modelrunner"):
         'conda_path': os.path.join(env.home, "miniconda", "bin"),
         'command': command
     }
-    run("PATH=%(conda_path)s:$PATH && source activate %(conda_env)s && %(command)s" % d, pty=False)
+    run("PATH={conda_path}:$PATH && source activate {conda_env} && {command}"
+        .format(**d),
+        pty=False)
 
 
 def run_conda_enabled(command):
@@ -28,27 +31,33 @@ def run_conda_enabled(command):
         'conda_path': os.path.join(env.home, "miniconda", "bin"),
         'command': command
     }
-    run("PATH=%(conda_path)s:$PATH && %(command)s" % d, pty=False)
+    run("PATH={conda_path}:$PATH && {command}".format(**d), pty=False)
 
 
 def stop():
     print("stopping modelrunner processes")
     with cd(env.project_directory):
-        run("./devops/stop_processes.sh", pty=False)
+        run("./scripts/stop_processes.sh", pty=False)
+
 
 setup_called = False
+
+
 def setup_env(**args):
     global setup_called
-    if setup_called: return
+    if setup_called:
+        return
     setup_called = True
     # use ssh config if available
-    if env.ssh_config_path and os.path.isfile(os.path.expanduser(env.ssh_config_path)):
+    if env.ssh_config_path and \
+            os.path.isfile(os.path.expanduser(env.ssh_config_path)):
         env.use_ssh_config = True
 
     env.update(DEFAULTS)
-    #allow user to override defaults
+    # allow user to override defaults
     env.update(args)
     env.project_directory = os.path.join(env.home, env.project)
+
 
 @task
 def setup(**args):
@@ -58,20 +67,21 @@ def setup(**args):
     Assumes machine has been setup with mr user under /home/mr
     """
     setup_env(**args)
-    print("baseline setup on %(host_string)s" % env)
+    print("baseline setup on {host_string}".format(**env))
     sudo("apt-get -y install git curl", warn_only=True)
 
     update_modelrunner()
-   
+
     # setup conda
     run("./modelrunner/devops/setup.sh")
 
     # create environ for modelrunner
     run_conda_enabled("./modelrunner/devops/setup_modelrunner.sh")
 
-    # setup sequencer and networker (not truly needed on primary, but keep 'em consistent for now)
+    # setup sequencer and networker
     run_conda_enabled("./modelrunner/devops/setup_sequencer.sh")
     run_conda_enabled("./modelrunner/devops/setup_networker.sh")
+
 
 @task
 def setup_model(**args):
@@ -83,9 +93,11 @@ def setup_model(**args):
     setup_env(**args)
 
     # find setup file
-    setup_script = "./modelrunner/devops/setup_{model}.sh".format(model=args['model'])
-    # setup sequencer and networker (not truly needed on primary, but keep 'em consistent for now)
+    setup_script = "./modelrunner/devops/setup_{model}.sh".\
+        format(model=args['model'])
+    # setup sequencer and networker
     run_conda_enabled(setup_script)
+
 
 @task
 def update_modelrunner(**args):
@@ -93,17 +105,21 @@ def update_modelrunner(**args):
     Updates the model runner code base and devops scripts
     """
     setup_env(**args)
-    pull(repo=env.modelrunner_repo, directory=env.project_directory, branch=env.modelrunner_branch)
+    pull(
+        repo=env.modelrunner_repo,
+        directory=env.project_directory,
+        branch=env.modelrunner_branch)
 
     # don't rely on remote scripts from repo, instead push local setup scripts
     # to run
     with settings(warn_only=True):
-        if run("test -d ./modelrunner/devops").failed:
-            run("mkdir -p ./modelrunner/devops")
-        
-    put("./devops/*.sh", "./modelrunner/devops", mode=0755) 
+        run("mkdir -p ./modelrunner/devops")
+        run("mkdir -p ./modelrunner/scripts")
 
-     # deploy appropriate config file
+    put("./devops/*.sh", "./modelrunner/devops", mode=0o755)
+    put("./scripts/*.sh", "./modelrunner/scripts", mode=0o755)
+
+    # deploy appropriate config file
     put(env.config_file, './modelrunner/config.ini')
 
 
@@ -114,16 +130,18 @@ def start_primary():
     with cd(env.project_directory):
         # run_in_conda_env("nohup redis-server > redis.log &")
         if(env.environment == "prod"):
-            run_in_conda_env("./devops/start_primary_production.sh")
+            run_in_conda_env("./scripts/start_primary_production.sh")
         else:
-            run_in_conda_env("./devops/start_primary.sh")
+            run_in_conda_env("./scripts/start_primary.sh")
+
 
 def start_worker():
     """
     Start the worker server
     """
     with cd(env.project_directory):
-        run_in_conda_env("./devops/start_worker.sh")
+        run_in_conda_env("./scripts/start_worker.sh")
+
 
 @task
 def start(**args):
@@ -145,13 +163,14 @@ def start(**args):
     # start appropriate processes
     start_config[env.configuration]()
 
+
 def pull(repo, directory, branch="master"):
-    with settings(warn_only=True): 
+    with settings(warn_only=True):
         if run("test -d %s" % directory).failed:
             run("git clone %s" % repo)
 
     with cd(directory):
-        # fetch repo, checkout branch and get rid of local 
+        # fetch repo, checkout branch and get rid of local
         run("git fetch origin")
         run("git remote update")
         run("git reset --hard origin/%s" % branch)

@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# Run the mvmax based sequencer model via the local python wrapper
 
 input_dir=$1
 output_dir=$2
