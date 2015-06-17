@@ -129,10 +129,16 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 5.  Start the server via `fab -H mr@your_server start:configuration=<worker|primary>,environment=<dev|prod>` 
 
-For production deployments, we suggest using [nginx](http://wiki.nginx.org) as your primary static file server.
-See the sample devops/modelrunner.nginx config file.
+See fabfile.py for more automated deployment details/options.
 
-See fabfile.py for more details and options.
+For production deployments, we suggest using [nginx](http://wiki.nginx.org) as your primary static file server.  See the sample devops/modelrunner.nginx config file for a sample nginx config.
+
+Redis is hosted on the primary server, so you'll want to secure access to the redis port (default 6379) and only allow requests to it from worker ip addresses.  Using ufw for firewall protection with ports secured, this should allow redis access for the worker (to be run on primary server running Ubuntu):
+
+```
+ufw allow from <worker_ip_address> to any port 6379
+```
+
 
 Development & Testing
 -----------

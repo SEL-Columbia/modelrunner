@@ -47,6 +47,9 @@ server{
     index index.html index.htm;
 
 
+    # for allowing large file uploads
+    client_max_body_size 50m;
+
     # access_log /home/path_to_site/access.log;
     # error_log /home/path_to_site/error.log;
  
