@@ -119,7 +119,7 @@ There are several options for deployment ranging from a single server "dev" to m
 
 Here are the basic steps (assumes you have a python environment with fabric installed locally):
 
-1.  Bring up an Ubuntu/Debian instance(s) (henceforth referred to as "your_server")
+1.  Bring up an Ubuntu/Debian instance(s) (henceforth referred to as "your_server").  Make sure the package repositories are updated by running `apt-get update`.  
 
 2.  Create a user named 'mr' to run modelrunner under on your_server 
 
