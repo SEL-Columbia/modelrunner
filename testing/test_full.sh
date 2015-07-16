@@ -1,12 +1,21 @@
 #!/bin/bash
 
-# full test, meant to be run from parent dir as in "$ ./testing/test_full.sh"
+# full test, meant to be run from parent dir as in "$ ./testing/test_full.sh localhost"
 # fail on any command failure
 set -e
 
+# get test server as param
+if [ $# -lt 1 ]
+then
+  echo "Usage: ${0##*/} test_server_name"
+  exit 1
+fi 
+
+server=$1
+
 # kick off a job
 echo "create new job"
-curl -s -F "job_name=test_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://localhost:8080/jobs > response
+curl -s -F "job_name=test_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://$server:8080/jobs > response
 cat response
 cat response |  python -c 'import sys, json; print json.load(sys.stdin)["message"]' | grep OK
 job_id=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["id"]'`
@@ -15,14 +24,14 @@ echo "job id $job_id created"
 # wait 12 seconds and test if it's complete
 sleep 12
 echo "checking job id $job_id status"
-curl -s http://localhost:8080/jobs/$job_id > response
+curl -s http://$server:8080/jobs/$job_id > response
 cat response
 cat response |  python -c 'import sys, json; print json.load(sys.stdin)["status"]' | grep COMPLETE
 echo "job id $job_id completed OK"
 
 # kick off another job to be killed
 echo "create job to be killed"
-curl -s -F "job_name=test_kill_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://localhost:8080/jobs > response
+curl -s -F "job_name=test_kill_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://$server:8080/jobs > response
 cat response |  python -c 'import sys, json; print json.load(sys.stdin)["message"]' | grep OK
 job_id=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["id"]'`
 echo "job id $job_id created"
@@ -37,7 +46,7 @@ echo "waiting for job $job_id to run"
 while [ "$status" != "RUNNING" -a $tries -lt $MAX_TRIES ]
 do
   sleep 1
-  curl -s http://localhost:8080/jobs/$job_id > response
+  curl -s http://$server:8080/jobs/$job_id > response
   status=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["status"]'`
   let tries++
 done
@@ -50,7 +59,7 @@ echo "job $job_id is running"
 
 # test the kill
 echo "attempt to kill job $job_id"
-curl -s http://localhost:8080/jobs/$job_id/kill > response
+curl -s http://$server:8080/jobs/$job_id/kill > response
 cat response |  python -c 'import sys, json; print json.load(sys.stdin)["message"]' | grep OK
 echo "kill job $job_id sent"
 # ensure that eventually the status of the killed job goes to "FAILED"
@@ -59,7 +68,7 @@ echo "waiting for job $job_id to be killed"
 while [ "$status" != "FAILED" -a $tries -lt $MAX_TRIES ]
 do
   sleep 1
-  curl -s http://localhost:8080/jobs/$job_id > response
+  curl -s http://$server:8080/jobs/$job_id > response
   status=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["status"]'`
   let tries++
 done

@@ -27,7 +27,7 @@ script:
   - sleep 1
   - for pid_file in *.pid; do p=`cat $pid_file`; echo "$pid_file $p"; done
   # simple submit job for now
-  - ./testing/test_full.sh
+  - ./testing/test_full.sh localhost
   
 notifications:
   irc: "irc.freenode.org#sel-columbia"
