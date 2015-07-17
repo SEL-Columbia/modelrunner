@@ -338,8 +338,8 @@ class JobManager:
         command_str = subprocess.list2cmdline(command_args)
         logger.info("running command %s" % command_str)
         popen_proc = subprocess.Popen(
-                        command_str,
-                        shell=True,
+                        command_args,
+                        shell=False,
                         stdout=job_data_log,
                         stderr=job_data_log)
 
