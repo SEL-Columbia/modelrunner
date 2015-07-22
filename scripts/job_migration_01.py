@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Script to list job data from Redis DB
+Script to migrate python pickled jobs to json based jobs
 """
 
 from modelrunner import config
