@@ -1,6 +1,7 @@
 #!/bin/bash
 
-sudo apt-get install -y curl
+# curl for getting conda, nginx for static server (production only)
+sudo apt-get install -y curl nginx
 
 if ! conda &> /dev/null
 then

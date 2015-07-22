@@ -116,7 +116,7 @@ def update_modelrunner(**args):
         run("mkdir -p ./modelrunner/devops")
         run("mkdir -p ./modelrunner/scripts")
 
-    put("./devops/*.sh", "./modelrunner/devops", mode=0o755)
+    put("./devops/*", "./modelrunner/devops", mode=0o755)
     put("./scripts/*.sh", "./modelrunner/scripts", mode=0o755)
 
     # deploy appropriate config file
@@ -128,7 +128,6 @@ def start_primary():
     Start the primary server
     """
     with cd(env.project_directory):
-        # run_in_conda_env("nohup redis-server > redis.log &")
         if(env.environment == "prod"):
             run_in_conda_env("./scripts/start_primary_production.sh")
         else:
@@ -140,7 +139,10 @@ def start_worker():
     Start the worker server
     """
     with cd(env.project_directory):
-        run_in_conda_env("./scripts/start_worker.sh")
+        if(env.environment == "prod"):
+            run_in_conda_env("./scripts/start_worker_production.sh")
+        else:
+            run_in_conda_env("./scripts/start_.sh")
 
 
 @task
