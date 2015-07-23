@@ -76,7 +76,11 @@ def setup(**args):
     run("./modelrunner/devops/setup.sh")
 
     # create environ for modelrunner
-    run_conda_enabled("./modelrunner/devops/setup_modelrunner.sh")
+
+    if(env.environment == "dev"):
+        run_conda_enabled("./modelrunner/devops/setup_modelrunner_dev.sh")
+    else:
+        run_conda_enabled("./modelrunner/devops/setup_modelrunner.sh")
 
     # setup sequencer and networker
     run_conda_enabled("./modelrunner/devops/setup_sequencer.sh")
