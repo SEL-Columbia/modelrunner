@@ -68,6 +68,7 @@ def setup(**args):
     """
     setup_env(**args)
     print("baseline setup on {host_string}".format(**env))
+    sudo("apt-get -y update", warn_only=True)
     sudo("apt-get -y install git curl", warn_only=True)
 
     update_modelrunner()
@@ -146,7 +147,7 @@ def start_worker():
         if(env.environment == "prod"):
             run_in_conda_env("./scripts/start_worker_production.sh")
         else:
-            run_in_conda_env("./scripts/start_.sh")
+            run_in_conda_env("./scripts/start_worker.sh")
 
 
 @task
