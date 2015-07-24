@@ -1,72 +1,51 @@
 #!/bin/bash
 
-# full test, meant to be run from parent dir as in "$ ./testing/test_full.sh"
+# full test, meant to be run from parent dir as in "$ ./testing/test_full.sh localhost"
+
 # fail on any command failure
 set -e
 
+# get test server as param
+if [ $# -lt 1 ]
+then
+  echo "Usage: ${0##*/} test_server_name"
+  exit 1
+fi 
+
+# needs to be set so that api_functions work
+MR_SERVER=$1
+# temp dir to store all working data
+MR_TMP_DIR=$(mktemp -d)
+# get the source dir for testing so we can source the api_functions
+MR_TEST_SRC_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+. $MR_TEST_SRC_DIR/api_functions.sh
+
+trap mr_cleanup EXIT
+
 # kick off a job
-echo "create new job"
-curl -s -F "job_name=test_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://localhost:8080/jobs > response
-cat response
-cat response |  python -c 'import sys, json; print json.load(sys.stdin)["message"]' | grep OK
-job_id=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["id"]'`
-echo "job id $job_id created"
+echo "creating new job"
+job_id=$(mr_create_job test_full_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/input.zip")
 
 # wait 12 seconds and test if it's complete
-sleep 12
-echo "checking job id $job_id status"
-curl -s http://localhost:8080/jobs/$job_id > response
-cat response
-cat response |  python -c 'import sys, json; print json.load(sys.stdin)["status"]' | grep COMPLETE
-echo "job id $job_id completed OK"
+echo "checking that job $job_id completes"
+mr_wait_for_status $job_id "COMPLETE" 12
 
 # kick off another job to be killed
-echo "create job to be killed"
-curl -s -F "job_name=test_kill_`date +%Y-%m-%d_%H:%M:%S`" -F "model=test" -F "zip_file=@testing/input.zip" http://localhost:8080/jobs > response
-cat response |  python -c 'import sys, json; print json.load(sys.stdin)["message"]' | grep OK
-job_id=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["id"]'`
-echo "job id $job_id created"
+echo "creating job to be killed"
+job_kill_id=$(mr_create_job test_full_kill_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/input.zip")
 
-# wait until status is RUNNING before kill
-# unset fail on error
-set +e
-status=""
-MAX_TRIES=20
-tries=0
-echo "waiting for job $job_id to run"
-while [ "$status" != "RUNNING" -a $tries -lt $MAX_TRIES ]
-do
-  sleep 1
-  curl -s http://localhost:8080/jobs/$job_id > response
-  status=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["status"]'`
-  let tries++
-done
-if [ $tries -ge $MAX_TRIES ]
-then
-  echo "job $job_id stuck in $status state.  Expected it to go to RUNNING"
-  exit 1
-fi
-echo "job $job_id is running"
+echo "waiting for job $job_kill_id to go RUNNING"
+mr_wait_for_status $job_kill_id "RUNNING" 2 
 
 # test the kill
-echo "attempt to kill job $job_id"
-curl -s http://localhost:8080/jobs/$job_id/kill > response
-cat response |  python -c 'import sys, json; print json.load(sys.stdin)["message"]' | grep OK
-echo "kill job $job_id sent"
+echo "attempting to kill job $job_kill_id"
+mr_kill_job $job_kill_id
+
 # ensure that eventually the status of the killed job goes to "FAILED"
-tries=0
-echo "waiting for job $job_id to be killed"
-while [ "$status" != "FAILED" -a $tries -lt $MAX_TRIES ]
-do
-  sleep 1
-  curl -s http://localhost:8080/jobs/$job_id > response
-  status=`cat response |  python -c 'import sys, json; print json.load(sys.stdin)["status"]'`
-  let tries++
-done
-if [ $tries -ge $MAX_TRIES ]
-then
-  echo "job $job_id stuck in $status state.  Expected it to go to FAILED"
-  exit 1
-fi
-echo "job $job_id successfully killed"
+echo "waiting for job $job_kill_id to go FAILED"
+mr_wait_for_status $job_kill_id "FAILED" 2
+
+# disable the trap now
+trap - EXIT
+mr_cleanup
 echo "SUCCESS"

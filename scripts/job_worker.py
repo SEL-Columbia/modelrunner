@@ -11,6 +11,7 @@ See config.py or pass --help to command for command line args
 
 import sys
 import logging
+import traceback
 from modelrunner import config
 from tornado.options import parse_command_line, parse_config_file
 
@@ -40,4 +41,7 @@ jm = mr.JobManager(config.options.redis_url,
 
 # continuously wait for jobs
 while(True):
-    jm.wait_for_new_jobs(config.options.model)
+    try: 
+        jm.wait_for_new_jobs(config.options.model)
+    except:
+        logger.error(traceback.format_exc())

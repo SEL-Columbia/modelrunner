@@ -176,28 +176,8 @@ class JobOptionsModule(tornado.web.UIModule):
     Helper class for simplifying job rendering in tornado html templates
     """
 
-    def get_data_dir(self, job, worker_dir=False):
-        if(worker_dir):
-            if(getattr(job, "worker_data_dir", False)):
-                return job.worker_data_dir
-        if(not worker_dir):
-            if(getattr(job, "primary_data_dir", False)):
-                return job.primary_data_dir
-        return "data"
-
     def kill_url(self, job):
         return "jobs/" + job.uuid + "/kill"
-
-    def log_url(self, job):
-        # TODO:  Make data dir based on options config
-        return job.worker_url + "/" +\
-                self.get_data_dir(job, worker_dir=True) + "/" +\
-                job.uuid + "/job_log.txt"
-
-    def download_url(self, job):
-        return job.primary_url + "/" +\
-                self.get_data_dir(job, worker_dir=False) + "/" +\
-                job.uuid + "/output.zip"
 
     def render(self, job):
         """
@@ -211,17 +191,17 @@ class JobOptionsModule(tornado.web.UIModule):
         # may be confusing, but we need to make kill links ajax
         href_ajax_templ = "<a class='ajax_link' href=%s>%s</a>"
         if job.status == mgr.JobManager.STATUS_RUNNING:
-            log_option = href_templ % (self.log_url(job), "Log")
+            log_option = href_templ % (job.log_url(), "Log")
             kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
             return "%s,%s" % (log_option, kill_option)
 
         if job.status == mgr.JobManager.STATUS_COMPLETE:
-            log_option = href_templ % (self.log_url(job), "Log")
-            dload_option = href_templ % (self.download_url(job), "Download")
+            log_option = href_templ % (job.log_url(), "Log")
+            dload_option = href_templ % (job.download_url(), "Download")
             return "%s,%s" % (log_option, dload_option)
 
         if job.status == mgr.JobManager.STATUS_FAILED:
-            log_option = href_templ % (self.log_url(job), "Log")
+            log_option = href_templ % (job.log_url(), "Log")
             return log_option
 
         return ""

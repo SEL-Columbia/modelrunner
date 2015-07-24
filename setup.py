@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open('requirements.txt') as f:
     required = list(f.read().splitlines())
 
-# Parse the version from the fiona module.
+# Parse the version from the modelrunner module.
 with open('modelrunner/__init__.py') as f:
     for line in f:
         if line.find("__version__") >= 0:

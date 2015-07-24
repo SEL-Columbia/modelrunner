@@ -1,6 +1,7 @@
 #!/bin/bash
 
-sudo apt-get install -y curl
+# curl for getting conda, nginx for static server (production only)
+sudo apt-get install -y curl nginx
 
 if ! conda &> /dev/null
 then
@@ -20,8 +21,5 @@ fi
 # bashrc may not have been sourced if run from remote
 export PATH="$HOME/miniconda/bin:$PATH"
 
-conda config --set always_yes yes --set changeps1 no
+conda config --set always_yes yes
 conda update -q conda
-
-# need conda build
-conda install conda-build

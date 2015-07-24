@@ -15,6 +15,7 @@ import urllib2
 import threading
 import subprocess
 import zipfile
+import shutil
 from zipfile import ZipFile
 
 # setup log
@@ -29,29 +30,28 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
         url (str):  http based url for file to retrieve
         destination_dir (str):  local dir to place file in
         file_name (str):  name of local copy of file (if None glean from url)
+
+    Exceptions:  will propagate any exception occuring during copy
     """
 
-    # http://stackoverflow.com/questions/22676/how-do-i-download-a-file-over-http-using-python
-    if(not file_name):
-        file_name = url.split('/')[-1]
+    dest_file_name = file_name
+    if(not dest_file_name):
+        dest_file_name = url.split('/')[-1]
 
-    u = urllib2.urlopen(url)
-    destination_file = os.path.join(destination_dir, file_name)
-    f = open(destination_file, 'wb')
+    destination_file = os.path.join(destination_dir, dest_file_name)
     logger.info("Downloading from url {}".format(url))
+    source = urllib2.urlopen(url)
+    dest = open(destination_file, 'wb')
+    try:
+        shutil.copyfileobj(source, dest)
+    except:
+        logger.error("Failed to retrieve file from url {}".format(url))
+        raise
+    finally:
+        source.close()
+        dest.close()
 
-    file_size_dl = 0
-    block_sz = 8192
-    while True:
-        buffer = u.read(block_sz)
-        if not buffer:
-            break
-
-        file_size_dl += len(buffer)
-        f.write(buffer)
-
-    logger.info("Finished %s bytes from url %s" % (file_size_dl, url))
-    f.close()
+    logger.info("Finished retrieving file from url {}".format(url))
 
 
 def zipdir(path, zip_file_name):
@@ -278,6 +278,10 @@ class JobManager:
         Args:
             model_name (str):  name of model this worker will run
 
+        TODO:  
+            - handle subprocess exceptions?
+            - close job_log on exceptions?
+
         """
         job_queue = "modelrunner:queues:%s" % model_name
         logger.info("waiting for job on queue %s" % job_queue)
@@ -307,26 +311,26 @@ class JobManager:
         logger.info("preparing input for job %s" % job.uuid)
         job_data_log = open(os.path.join(job_data_dir, "job_log.txt"), 'w')
 
-        # catch data prep exceptions so that if the job fails, we don't
-        # kill the worker
+        # catch data prep exceptions so that we mark the job as failed
         try:
             self._prep_input(job)
-        except Exception as e:
-            # Fail the job, log it, notify primary and get outta here
-            failure_msg = "Failed prepping data: %s" % e
-            logger.info(failure_msg)
+        except:
+            # Fail the job, log it, notify primary and re-raise for caller
+            failure_msg = "Failed prepping data for job {}".format(job.uuid)
+            logger.error(failure_msg)
             job_data_log.write(failure_msg)
             job.status = JobManager.STATUS_FAILED
             self.add_update_job_table(job)
             self.rdb.rpush(primary_queue, job.uuid)
             job_data_log.close()
-            return
+            raise
 
         # Input has been prepped so start the job
         command = self.model_commands[model_name]
         logger.info("starting job %s" % job.uuid)
         # update job status
         job.status = JobManager.STATUS_RUNNING
+        job.on_primary = False # now on worker
         self.add_update_job_table(job)
 
         # add the input and output dir to the command
@@ -338,8 +342,8 @@ class JobManager:
         command_str = subprocess.list2cmdline(command_args)
         logger.info("running command %s" % command_str)
         popen_proc = subprocess.Popen(
-                        command_str,
-                        shell=True,
+                        command_args,
+                        shell=False,
                         stdout=job_data_log,
                         stderr=job_data_log)
 
@@ -392,21 +396,23 @@ class JobManager:
 
         logger.info("job {} finished with status of {}".
                     format(job.uuid, job.status))
-        if(job.status == JobManager.STATUS_PROCESSED):
-            if(not self.worker_is_primary()):  # need to get output
+        if(not self.worker_is_primary()):  # need to get output
+            
+            logger.info("retrieving log for job {}".format(job.uuid))
+            job_data_dir = os.path.join(self.data_dir, job.uuid)
+            if(not os.path.exists(job_data_dir)):
+                os.mkdir(job_data_dir)
+
+            fetch_file_from_url(job.log_url(), job_data_dir)
+
+            if(job.status == JobManager.STATUS_PROCESSED):
+
                 logger.info("retrieving output for job {}".format(job.uuid))
-                output_url = job.worker_url + "/" +\
-                    job.worker_data_dir + "/" +\
-                    job.uuid + "/output.zip"
+                fetch_file_from_url(job.download_url(), job_data_dir)
+                job.status = JobManager.STATUS_COMPLETE
 
-                job_data_dir = os.path.join(self.data_dir, job.uuid)
-                if(not os.path.exists(job_data_dir)):
-                    os.mkdir(job_data_dir)
-
-                fetch_file_from_url(output_url, job_data_dir)
-
-            job.status = JobManager.STATUS_COMPLETE
-            self.add_update_job_table(job)
+        job.on_primary = True
+        self.add_update_job_table(job)
 
     def kill_job(self, job):
         """
@@ -475,6 +481,7 @@ class Job:
         worker_url (str):  URL of the worker server for the job
         primary_data_dir (str):  path on primary server holding job data
         worker_data_dir (str):  path on worker server holding job data
+        on_primary (bool): whether job is currently on primary or worker
 
     """
 
@@ -487,7 +494,8 @@ class Job:
                  primary_url=None,
                  worker_url=None,
                  primary_data_dir=None,
-                 worker_data_dir=None):
+                 worker_data_dir=None,
+                 on_primary=True):
 
         self.model = model
         self.name = name
@@ -503,6 +511,49 @@ class Job:
         self.worker_url = worker_url
         self.primary_data_dir = primary_data_dir
         self.worker_data_dir = worker_data_dir
+        self.on_primary = on_primary
+
+    def get_data_dir(self):
+        """
+        Get the data directory name configured for this job
+
+        Returns:
+            the data dir for this job on worker or primary (default is "data")
+        """
+        if(not self.on_primary):
+            if(getattr(self, "worker_data_dir", False)):
+                return self.worker_data_dir
+        else:
+            if(getattr(self, "primary_data_dir", False)):
+                return self.primary_data_dir
+
+        return "data"
+
+    def get_url(self):
+        """ url based on on_primary attribute """
+        server_url = self.primary_url if self.on_primary else self.worker_url
+        return server_url
+
+    def log_url(self):
+        """
+        Get current url of the jobs log
+        NOTE:  This will change depending on whether job is on_primary
+        """
+
+        url = "{}/{}/{}/job_log.txt".format(
+            self.get_url(),
+            self.get_data_dir(),
+            self.uuid)
+
+        return url
+
+    def download_url(self):
+        url = "{}/{}/{}/output.zip".format(
+            self.get_url(),
+            self.get_data_dir(),
+            self.uuid)
+
+        return url
 
 
 class JobEncoder(json.JSONEncoder):

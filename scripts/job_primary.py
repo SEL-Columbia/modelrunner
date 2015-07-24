@@ -10,6 +10,7 @@ See config.py or pass --help to command for command line args
 
 import sys
 import logging
+import traceback
 from tornado.options import parse_command_line, parse_config_file
 
 import modelrunner as mr
@@ -36,6 +37,9 @@ jm = mr.JobManager(config.options.redis_url,
                    command_dict,
                    config.options.worker_is_primary)
 
-# continuously wait for jobs to complete
+# continuously wait for jobs to complete (reporting any exceptions)
 while(True):
-    jm.wait_for_finished_jobs()
+    try:
+        jm.wait_for_finished_jobs()
+    except:
+        logger.error(traceback.format_exc())

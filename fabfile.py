@@ -68,6 +68,7 @@ def setup(**args):
     """
     setup_env(**args)
     print("baseline setup on {host_string}".format(**env))
+    sudo("apt-get -y update", warn_only=True)
     sudo("apt-get -y install git curl", warn_only=True)
 
     update_modelrunner()
@@ -76,7 +77,11 @@ def setup(**args):
     run("./modelrunner/devops/setup.sh")
 
     # create environ for modelrunner
-    run_conda_enabled("./modelrunner/devops/setup_modelrunner.sh")
+
+    if(env.environment == "dev"):
+        run_conda_enabled("./modelrunner/devops/setup_modelrunner_dev.sh")
+    else:
+        run_conda_enabled("./modelrunner/devops/setup_modelrunner.sh")
 
     # setup sequencer and networker
     run_conda_enabled("./modelrunner/devops/setup_sequencer.sh")
@@ -116,7 +121,7 @@ def update_modelrunner(**args):
         run("mkdir -p ./modelrunner/devops")
         run("mkdir -p ./modelrunner/scripts")
 
-    put("./devops/*.sh", "./modelrunner/devops", mode=0o755)
+    put("./devops/*", "./modelrunner/devops", mode=0o755)
     put("./scripts/*.sh", "./modelrunner/scripts", mode=0o755)
 
     # deploy appropriate config file
@@ -128,7 +133,6 @@ def start_primary():
     Start the primary server
     """
     with cd(env.project_directory):
-        # run_in_conda_env("nohup redis-server > redis.log &")
         if(env.environment == "prod"):
             run_in_conda_env("./scripts/start_primary_production.sh")
         else:
@@ -140,7 +144,10 @@ def start_worker():
     Start the worker server
     """
     with cd(env.project_directory):
-        run_in_conda_env("./scripts/start_worker.sh")
+        if(env.environment == "prod"):
+            run_in_conda_env("./scripts/start_worker_production.sh")
+        else:
+            run_in_conda_env("./scripts/start_worker.sh")
 
 
 @task
