@@ -29,7 +29,7 @@ script:
   # test job runs to completion and then another is killed
   - ./testing/test_full.sh localhost
    # test 2 jobs created, one is killed, other runs to completion 
-  - ./testing/test_queuing.sh localhost
+  - ./testing/test_queueing.sh localhost
   
 notifications:
   irc: "irc.freenode.org#sel-columbia"
