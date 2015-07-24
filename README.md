@@ -89,6 +89,39 @@ API (Primary Server)
     Get all jobs (returns an html view for now)
 
 
+Bash API
+--------
+
+There's now a sample bash api for interacting with a modelrunner instance.
+
+Here's a sample session:
+
+```
+# set the modelrunner instance primary server and temp dir
+MR_SERVER=127.0.0.1
+# temp dir to store all working data
+MR_TMP_DIR=$(mktemp -d)
+
+# source the api
+. testing/api_functions.sh
+
+# create job and echo it's job id
+job_id=$(mr_create_job test_job_1 "test" "@testing/input.zip")
+echo $(mr_job_status $job_id)
+
+# kill the job
+mr_kill_job $job_id
+
+# create job and echo it's job id
+job_id=$(mr_create_job test_job_2 "test" "@testing/input.zip")
+echo $(mr_job_status $job_id)
+
+# wait for it to complete or until 10 second timeout
+mr_wait_for_status $job_id "COMPLETE" 10
+echo "SUCCESS"
+```
+
+
 Worker Process
 --------------
 
@@ -125,7 +158,7 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 3.  On your local machine, clone this repo and cd into the modelrunner directory (if not already done)
 
-4.  Setup the server via `fab -H mr@your_server setup:config_file=your_config.ini` (see sample config.ini for a guide)
+4.  Setup the server via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide)
 
 5.  Start the server via `fab -H mr@your_server start:configuration=<worker|primary>,environment=<dev|prod>` 
 
@@ -143,5 +176,5 @@ ufw allow from <worker_ip_address> to any port 6379
 Development & Testing
 -----------
 
-Once you've made changes to your branch, start up a primary and worker, run `./testing/test_full.sh` and
+Once you've made changes to your branch, start up a primary and worker, run `./testing/test_full.sh <server>` and
 ensure it's exit code is 0.
