@@ -33,6 +33,28 @@ Components
     Model that can be run with inputs on a Worker
 
 
+Worker Process
+--------------
+
+Workers wait on 2 queues:
+
+1.  modelrunner:queues:&lt;model&gt;
+
+  This is where it waits for jobs to run a specific model
+
+2.  modelrunner:queues:&lt;worker_id&gt;
+
+  This is where it waits for a job to be killed
+
+Additionally, the Primary waits on a queue:
+
+- modelrunner:queues:&lt;primary_id&gt;
+
+  This is where it waits to be notified of a finished job
+
+Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
+
+
 API (Primary Server)
 --------
 
@@ -89,35 +111,12 @@ API (Primary Server)
     Get all jobs (returns an html view for now)
 
 
-
-Worker Process
---------------
-
-Workers wait on 2 queues:
-
-1.  modelrunner:queues:&lt;model&gt;
-
-  This is where it waits for jobs to run a specific model
-
-2.  modelrunner:queues:&lt;worker_id&gt;
-
-  This is where it waits for a job to be killed
-
-Additionally, the Primary waits on a queue:
-
-- modelrunner:queues:&lt;primary_id&gt;
-
-  This is where it waits to be notified of a finished job
-
-Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
-
-
 Bash API
 --------
 
-There's now a sample bash api for interacting with a modelrunner instance.
+There's a sample bash api for interacting with a modelrunner instance.
 
-Here's a sample session:
+Here's a session:
 
 ```
 # set the modelrunner instance primary server and temp dir
