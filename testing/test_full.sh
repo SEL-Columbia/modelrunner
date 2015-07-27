@@ -8,7 +8,7 @@ set -e
 # get test server as param
 if [ $# -lt 1 ]
 then
-  echo "Usage: ${0##*/} test_server_name"
+  echo "Usage: ${0##*/} test_server_url"
   exit 1
 fi 
 

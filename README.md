@@ -89,6 +89,29 @@ API (Primary Server)
     Get all jobs (returns an html view for now)
 
 
+
+Worker Process
+--------------
+
+Workers wait on 2 queues:
+
+1.  modelrunner:queues:&lt;model&gt;
+
+  This is where it waits for jobs to run a specific model
+
+2.  modelrunner:queues:&lt;worker_id&gt;
+
+  This is where it waits for a job to be killed
+
+Additionally, the Primary waits on a queue:
+
+- modelrunner:queues:&lt;primary_id&gt;
+
+  This is where it waits to be notified of a finished job
+
+Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
+
+
 Bash API
 --------
 
@@ -122,28 +145,6 @@ echo "SUCCESS"
 ```
 
 
-Worker Process
---------------
-
-Workers wait on 2 queues:
-
-1.  modelrunner:queues:&lt;model&gt;
-
-  This is where it waits for jobs to run a specific model
-
-2.  modelrunner:queues:&lt;worker_id&gt;
-
-  This is where it waits for a job to be killed
-
-Additionally, the Primary waits on a queue:
-
-- modelrunner:queues:&lt;primary_id&gt;
-
-  This is where it waits to be notified of a finished job
-
-Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
-
-
 Installation and Deployment
 ---------------------------
 
@@ -164,7 +165,7 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 See fabfile.py for more automated deployment details/options.
 
-For production deployments, we suggest using [nginx](http://wiki.nginx.org) as your primary static file server.  See the sample devops/modelrunner.nginx config file for a sample nginx config.
+For production deployments, we use [nginx](http://wiki.nginx.org) as the static file server on the primary and worker servers.  See the sample devops/<primary|worker>.nginx config file for details.
 
 Redis is hosted on the primary server, so you'll want to secure access to the redis port (default 6379) and only allow requests to it from worker ip addresses.  Using ufw for firewall protection with ports secured, this should allow redis access for the worker (to be run on primary server running Ubuntu):
 
@@ -176,5 +177,5 @@ ufw allow from <worker_ip_address> to any port 6379
 Development & Testing
 -----------
 
-Once you've made changes to your branch, start up a primary and worker, run `./testing/test_full.sh <server>` and
+Once you've made changes to your branch, start up a primary and worker in dev mode, run `./testing/test_full.sh <server>` and
 ensure it's exit code is 0.
