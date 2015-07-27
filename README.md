@@ -105,14 +105,14 @@ MR_TMP_DIR=$(mktemp -d)
 # source the api
 . testing/api_functions.sh
 
-# create job and echo it's job id
+# create job and echo it's status
 job_id=$(mr_create_job test_job_1 "test" "@testing/input.zip")
 echo $(mr_job_status $job_id)
 
 # kill the job
 mr_kill_job $job_id
 
-# create job and echo it's job id
+# create job and echo it's status
 job_id=$(mr_create_job test_job_2 "test" "@testing/input.zip")
 echo $(mr_job_status $job_id)
 
