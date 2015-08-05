@@ -56,6 +56,9 @@ application = tornado.web.Application([
             server.JobHandler, dict(job_mgr=jm)),
         (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill",
             server.JobKillHandler, dict(job_mgr=jm)),
+        (r"/admin/(.*)", 
+         server.AdminHandler, 
+         dict(job_mgr=jm, admin_key=config.options.admin_key))
         ],
         template_path=config.options.template_path,
         debug=config.options.debug,

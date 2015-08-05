@@ -33,6 +33,10 @@ define(
     default=True,
     help="Whether worker and primary are one")
 define(
+    "admin_key",
+    default="",
+    help="key to access admin site")
+define(
     "template_path",
     default=os.path.join(os.path.curdir, "templates"),
     help="directory where html template files reside")

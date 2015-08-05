@@ -168,7 +168,40 @@ class JobHandler(tornado.web.RequestHandler):
             jobs = self.job_mgr.get_jobs()
             # order descending
             jobs.sort(key=lambda job: job.created, reverse=True)
-            self.render("view_jobs.html", jobs=jobs)
+            self.render("view_jobs.html", jobs=jobs, admin=False)
+
+
+class AdminHandler(tornado.web.RequestHandler):
+    """
+    Handles admin tasks
+    This is meant as a lightweight backdoor to admin functionality
+    """
+
+    def initialize(self, job_mgr, admin_key=None):
+        """
+        init with the Manager instance
+
+        Args:
+            job_mgr (modelrunner.JobManager):  JobManager instance
+            request_admin_key (str):  Key required to access this section 
+        """
+
+        self.job_mgr = job_mgr
+        self.admin_key = admin_key
+
+    def get(self, request_admin_key=None):
+        """
+        View jobs
+
+        Args:
+            request_admin_key (str):  Key to test user access
+        """
+        if request_admin_key != self.admin_key:
+            raise tornado.web.HTTPError(403, "Only Admins Allowed")
+
+        jobs = self.job_mgr.get_jobs()
+        jobs.sort(key=lambda job: job.created, reverse=True)
+        self.render("view_jobs.html", jobs=jobs, admin=True)
 
 
 class JobOptionsModule(tornado.web.UIModule):
@@ -177,14 +210,15 @@ class JobOptionsModule(tornado.web.UIModule):
     """
 
     def kill_url(self, job):
-        return "jobs/" + job.uuid + "/kill"
+        return "/jobs/" + job.uuid + "/kill"
 
-    def render(self, job):
+    def render(self, job, admin=False):
         """
         main method for rendering job links based on job status
 
         Args:
             job (modelrunner.Job):  job instance to render links for
+            admin (bool):  whether to display admin functions
         """
 
         href_templ = "<a href=%s>%s</a>"
@@ -192,8 +226,11 @@ class JobOptionsModule(tornado.web.UIModule):
         href_ajax_templ = "<a class='ajax_link' href=%s>%s</a>"
         if job.status == mgr.JobManager.STATUS_RUNNING:
             log_option = href_templ % (job.log_url(), "Log")
-            kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
-            return "%s,%s" % (log_option, kill_option)
+            if admin:
+                kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
+                return "%s,%s" % (log_option, kill_option)
+            else:
+                return "%s" % log_option
 
         if job.status == mgr.JobManager.STATUS_COMPLETE:
             log_option = href_templ % (job.log_url(), "Log")
