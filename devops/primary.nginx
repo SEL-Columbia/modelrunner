@@ -52,7 +52,8 @@ server{
 
     # access_log /home/path_to_site/access.log;
     # error_log /home/path_to_site/error.log;
- 
+
+    location /robots.txt {return 200 "User-agent: *\nDisallow: /\n";} 
     location / {
         proxy_pass http://0.0.0.0:8080;
         proxy_set_header Host $host;
