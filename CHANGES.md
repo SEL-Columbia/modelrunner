@@ -1,3 +1,10 @@
+## 0.4.1
+
+Adds simple admin section to site secured by "admin_key"
+
+- Bugs fixed: 
+    - #41 Anyone or thing (i.e. bots) could kill jobs via jobs view page;  Now killing jobs links are exposed to admin section which can only be unlocked with key (/admin/YOUR_KEY)
+
 ## 0.4.0
 
 Makes modelrunner more robust after load testing and usage showed some cracks.
