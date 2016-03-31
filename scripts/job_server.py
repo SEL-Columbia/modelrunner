@@ -66,6 +66,7 @@ application = tornado.web.Application([
         **settings
         )
 
+logger.info("modelrunner server listening on port %s" % config.options.port)
 application.listen(config.options.port)
 
 # TODO:  Setup JobManager with config options and command_dict
