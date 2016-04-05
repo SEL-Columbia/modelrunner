@@ -1,0 +1,6 @@
+data
+worker_data
+*.pyc
+*.swp
+/*.egg-info
+/*.rdb

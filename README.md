@@ -176,5 +176,18 @@ ufw allow from <worker_ip_address> to any port 6379
 Development & Testing
 -----------
 
+Assumptions for setting up a development environment:
+- [anaconda](https://docs.continuum.io/anaconda/install) is installed (and some familiarity with it is useful)
+- This github repository has been cloned to your machine to `mr_src` directory and your are in that directory.
+
+A simple development environment with one primary and one worker can be setup via the following 
+
+```
+conda create -n modelrunner python=2.7
+source activate modelrunner
+python setup.py develop
+conda install redis
+```
+
 Once you've made changes to your branch, start up a primary and worker in dev mode, run `./testing/test_full.sh <server>` and
 ensure it's exit code is 0.

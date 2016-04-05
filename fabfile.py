@@ -33,15 +33,7 @@ def run_conda_enabled(command):
     }
     run("PATH={conda_path}:$PATH && {command}".format(**d), pty=False)
 
-
-def stop():
-    print("stopping modelrunner processes")
-    with cd(env.project_directory):
-        run("./scripts/stop_processes.sh", pty=False)
-
-
 setup_called = False
-
 
 def setup_env(**args):
     global setup_called
@@ -57,6 +49,18 @@ def setup_env(**args):
     # allow user to override defaults
     env.update(args)
     env.project_directory = os.path.join(env.home, env.project)
+
+
+@task
+def stop(**args):
+    """
+    Stops all modelrunner process
+    """
+
+    setup_env(**args)
+    print("stopping modelrunner processes")
+    with cd(env.project_directory):
+        run("./scripts/stop_processes.sh", pty=False)
 
 
 @task
