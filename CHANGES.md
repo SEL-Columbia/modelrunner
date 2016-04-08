@@ -1,3 +1,11 @@
+## 0.4.2
+
+- Fixes bug #52.  
+  - Now worker's 'WaitForKill' thread is model specific (by adding model to the queue name).
+- Cleaned up string handling in manager.
+- Modified testing/test_full to test running multiple simultaneous models
+- Modified models/test.sh to take sleep_count from input dir
+
 ## 0.4.1
 
 Adds simple admin section to site secured by "admin_key"
