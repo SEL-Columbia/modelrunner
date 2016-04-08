@@ -13,7 +13,7 @@ install:
   - conda info -a
   # setup modelrunner
   - conda create -n modelrunner python=2.7
-  - conda install --yes -c sel -n modelrunner modelrunner
+  - conda install --yes -c https://conda.anaconda.org/sel -n modelrunner modelrunner
 services:
   - redis-server
 before_script:
