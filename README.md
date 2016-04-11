@@ -42,9 +42,9 @@ Workers wait on 2 queues:
 
   This is where it waits for jobs to run a specific model
 
-2.  modelrunner:queues:&lt;worker_id&gt;
+2.  modelrunner:queues:&lt;worker_id&gt;:&lt;model&gt;
 
-  This is where it waits for a job to be killed
+  This is where it waits for a job (specific to model) to be killed
 
 Additionally, the Primary waits on a queue:
 
@@ -128,14 +128,14 @@ MR_TMP_DIR=$(mktemp -d)
 . testing/api_functions.sh
 
 # create job and echo it's status
-job_id=$(mr_create_job test_job_1 "test" "@testing/input.zip")
+job_id=$(mr_create_job test_job_1 "test" "@testing/sleep_count_8.zip")
 echo $(mr_job_status $job_id)
 
 # kill the job
 mr_kill_job $job_id
 
 # create job and echo it's status
-job_id=$(mr_create_job test_job_2 "test" "@testing/input.zip")
+job_id=$(mr_create_job test_job_2 "test" "@testing/sleep_count_8.zip")
 echo $(mr_job_status $job_id)
 
 # wait for it to complete or until 10 second timeout
