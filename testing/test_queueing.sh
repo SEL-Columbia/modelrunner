@@ -30,12 +30,12 @@ MR_TEST_SRC_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 trap mr_cleanup EXIT
 
 echo "creating 1st job"
-job_1_id=$(mr_create_job test_queue_kill_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/input.zip")
+job_1_id=$(mr_create_job test_queue_kill_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/sleep_count_8.zip")
 # wait for job 1 to start, kill it and wait for it to fail
 mr_wait_for_status $job_1_id "RUNNING" 10
 
 echo "created job $job_1_id (RUNNING), now create 2nd job"
-job_2_id=$(mr_create_job test_queue_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/input.zip")
+job_2_id=$(mr_create_job test_queue_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/sleep_count_8.zip")
 echo "created job $job_2_id"
 
 echo "killing job $job_1_id"
