@@ -12,7 +12,7 @@
    height="468px"
    version="1.1"
    id="svg2985"
-   inkscape:version="0.48.5 r10040"
+   inkscape:version="0.91 r13725"
    sodipodi:docname="diagram.svg">
   <metadata
      id="metadata3067">
@@ -22,6 +22,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -34,15 +35,15 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1278"
-     inkscape:window-height="1422"
+     inkscape:window-width="2558"
+     inkscape:window-height="1438"
      id="namedview3065"
      showgrid="false"
-     inkscape:zoom="2.2566667"
-     inkscape:cx="603.94387"
-     inkscape:cy="234"
-     inkscape:window-x="0"
-     inkscape:window-y="16"
+     inkscape:zoom="2"
+     inkscape:cx="360.16554"
+     inkscape:cy="236.49597"
+     inkscape:window-x="1366"
+     inkscape:window-y="0"
      inkscape:window-maximized="0"
      inkscape:current-layer="g2989" />
   <defs
@@ -140,7 +141,9 @@
 
 
 
+
 *API*<xhtml:br />
+
 
 
 
@@ -150,7 +153,9 @@
 
 
 
+
 - view([job])<xhtml:br />
+
 
 
 
@@ -160,7 +165,9 @@
 
 
 
+
 - dequeue(worker)<xhtml:br />
+
 
 
 
@@ -281,7 +288,6 @@
        ry="40"
        pointer-events="none"
        id="ellipse3037"
-       d="m 541,321 c 0,22.09139 -60.44156,40 -135,40 -74.55844,0 -135,-17.90861 -135,-40 0,-22.09139 60.44156,-40 135,-40 74.55844,0 135,17.90861 135,40 z"
        sodipodi:cx="406"
        sodipodi:cy="321"
        sodipodi:rx="135"
@@ -418,7 +424,7 @@
          inkscape:connector-curvature="0" />
       <path
          transform="translate(-0.5,-0.5)"
-         d="m 261.44756,272.13589 c 0,4.64996 -14.78056,8.4195 -33.01329,8.4195 -18.23274,0 -33.0133,-3.76954 -33.0133,-8.4195 0,-4.64996 14.78056,-8.41949 33.0133,-8.41949 18.23273,0 33.01329,3.76953 33.01329,8.41949 z"
+         d="m 261.44756,272.13589 a 33.013294,8.4194975 0 0 1 -33.01329,8.4195 33.013294,8.4194975 0 0 1 -33.0133,-8.4195 33.013294,8.4194975 0 0 1 33.0133,-8.41949 33.013294,8.4194975 0 0 1 33.01329,8.41949 z"
          sodipodi:ry="8.4194975"
          sodipodi:rx="33.013294"
          sodipodi:cy="272.13589"
@@ -511,7 +517,7 @@
          inkscape:connector-curvature="0" />
       <path
          transform="translate(-0.5,-0.5)"
-         d="m 261.44756,272.13589 c 0,4.64996 -14.78056,8.4195 -33.01329,8.4195 -18.23274,0 -33.0133,-3.76954 -33.0133,-8.4195 0,-4.64996 14.78056,-8.41949 33.0133,-8.41949 18.23273,0 33.01329,3.76953 33.01329,8.41949 z"
+         d="m 261.44756,272.13589 a 33.013294,8.4194975 0 0 1 -33.01329,8.4195 33.013294,8.4194975 0 0 1 -33.0133,-8.4195 33.013294,8.4194975 0 0 1 33.0133,-8.41949 33.013294,8.4194975 0 0 1 33.01329,8.41949 z"
          sodipodi:ry="8.4194975"
          sodipodi:rx="33.013294"
          sodipodi:cy="272.13589"
@@ -551,18 +557,19 @@
          id="flowPara4162-3" /></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot4355"
-       style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
-       transform="translate(9.5,-4.5)"><flowRegion
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.27085686px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+       transform="matrix(1.0856661,0,0,1.1329478,-18.223778,-7.003969)"><flowRegion
          id="flowRegion4357"><rect
            id="rect4359"
            width="171.04877"
            height="148.44904"
            x="346.97192"
-           y="120.58494" /></flowRegion><flowPara
+           y="120.58494"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.27085686px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start" /></flowRegion><flowPara
          id="flowPara4361">Redis</flowPara><flowPara
          id="flowPara4363">- jobs (hash)</flowPara><flowPara
          id="flowPara4365">- queues (lists)</flowPara><flowPara
          id="flowPara4367">  :primary</flowPara><flowPara
-         id="flowPara4369">  :worker&lt;n&gt;</flowPara><flowPara
+         id="flowPara4369">  :worker&lt;n&gt;:&lt;model&gt;</flowPara><flowPara
          id="flowPara4371">  :models:&lt;n&gt;</flowPara></flowRoot>  </g>
 </svg>
