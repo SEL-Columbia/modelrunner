@@ -64,3 +64,8 @@ define(
     default="./test.sh",
     help="test model command",
     group="model_command")
+define(
+    "test_2",
+    default="./test.sh",
+    help="test model (for simultaneous tests)",
+    group="model_command")

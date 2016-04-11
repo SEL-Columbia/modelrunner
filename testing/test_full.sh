@@ -24,7 +24,7 @@ trap mr_cleanup EXIT
 
 # kick off a job
 echo "creating new job"
-job_id=$(mr_create_job test_full_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/input.zip")
+job_id=$(mr_create_job test_full_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/sleep_count_8.zip")
 
 # wait 12 seconds and test if it's complete
 echo "checking that job $job_id completes"
@@ -32,7 +32,7 @@ mr_wait_for_status $job_id "COMPLETE" 12
 
 # kick off another job to be killed
 echo "creating job to be killed"
-job_kill_id=$(mr_create_job test_full_kill_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/input.zip")
+job_kill_id=$(mr_create_job test_full_kill_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/sleep_count_30.zip")
 
 echo "waiting for job $job_kill_id to go RUNNING"
 mr_wait_for_status $job_kill_id "RUNNING" 2 
@@ -44,6 +44,33 @@ mr_kill_job $job_kill_id
 # ensure that eventually the status of the killed job goes to "FAILED"
 echo "waiting for job $job_kill_id to go FAILED"
 mr_wait_for_status $job_kill_id "FAILED" 2
+
+# ensure that we can kill 2nd job while 1st job is running
+echo "creating long running job"
+job_long_id=$(mr_create_job test_long_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/sleep_count_30.zip")
+
+echo "creating 2nd job for separate model to be killed"
+job_2_id=$(mr_create_job test_2_`date +%Y-%m-%d_%H:%M:%S` "test_2" "@testing/sleep_count_8.zip")
+
+echo "waiting for job $job_2_id to go RUNNING"
+mr_wait_for_status $job_2_id "RUNNING" 2 
+
+# test the kill
+echo "attempting to kill job $job_2_id"
+mr_kill_job $job_2_id
+
+# ensure that eventually the status of the killed job goes to "FAILED"
+echo "waiting for job $job_2_id to go FAILED"
+mr_wait_for_status $job_2_id "FAILED" 2
+
+# test killing long running job
+echo "attempting to kill job $job_long_id"
+mr_kill_job $job_long_id
+
+# ensure that eventually the status of the killed job goes to "FAILED"
+echo "waiting for job $job_long_id to go FAILED"
+mr_wait_for_status $job_long_id "FAILED" 2
+
 
 # disable the trap now
 trap - EXIT

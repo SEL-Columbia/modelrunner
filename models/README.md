@@ -8,7 +8,6 @@ To enable a new model:
     should allow the model to be invoked via a script running on a worker.  
 2.  Modify the fabfile so that it can call your deploy script.   
     TODO:  Decouple model deployment from modelrunner ala Travis
-
 3.  Add an appropriately defined script to this dir (see test.sh for example)
 4.  "define" a new config parameter named for the model in config.py.
     Associate that parameter with the "model_command" group.

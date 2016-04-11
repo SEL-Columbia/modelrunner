@@ -15,16 +15,16 @@
 input_dir=$1
 output_dir=$2
 
-# count SECONDS seconds and write ouput
-export COUNT_SECONDS=8
+# get count of times to sleep
+count_sleeps=$( cat $input_dir/sleep_count )
 
 ls $input_dir
 
 i=0
-while (( i < COUNT_SECONDS ))
+while [ $i -lt $count_sleeps ]
 do
     echo $i
-	sleep 1
+    sleep 1
     let i++
 done
 echo "output" > $output_dir/output.txt
