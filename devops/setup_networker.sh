@@ -1,4 +1,6 @@
 #!/bin/bash
+
+source $HOME/.bash_profile
 # so that conda doesn't exit after running
 conda config --set always_yes yes --set changeps1 no
 

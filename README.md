@@ -33,6 +33,28 @@ Components
     Model that can be run with inputs on a Worker
 
 
+Worker Process
+--------------
+
+Workers wait on 2 queues:
+
+1.  modelrunner:queues:&lt;model&gt;
+
+  This is where it waits for jobs to run a specific model
+
+2.  modelrunner:queues:&lt;worker_id&gt;:&lt;model&gt;
+
+  This is where it waits for a job (specific to model) to be killed
+
+Additionally, the Primary waits on a queue:
+
+- modelrunner:queues:&lt;primary_id&gt;
+
+  This is where it waits to be notified of a finished job
+
+Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
+
+
 API (Primary Server)
 --------
 
@@ -75,7 +97,7 @@ API (Primary Server)
 
     Kill a running job
     ```
-    http://localhost:8080/jobs/$job_id
+    http://localhost:8080/jobs/$job_id/kill
 
     {
         "id": "df11e13d-87d5-433b-ad28-9b27b95f6e3e",
@@ -89,26 +111,37 @@ API (Primary Server)
     Get all jobs (returns an html view for now)
 
 
-Worker Process
---------------
+Bash API
+--------
 
-Workers wait on 2 queues:
+There's a sample bash api for interacting with a modelrunner instance.
 
-1.  modelrunner:queues:&lt;model&gt;
+Here's a session:
 
-  This is where it waits for jobs to run a specific model
+```
+# set the modelrunner instance primary server and temp dir
+MR_SERVER=127.0.0.1
+# temp dir to store all working data
+MR_TMP_DIR=$(mktemp -d)
 
-2.  modelrunner:queues:&lt;worker_id&gt;
+# source the api
+. testing/api_functions.sh
 
-  This is where it waits for a job to be killed
+# create job and echo it's status
+job_id=$(mr_create_job test_job_1 "test" "@testing/sleep_count_8.zip")
+echo $(mr_job_status $job_id)
 
-Additionally, the Primary waits on a queue:
+# kill the job
+mr_kill_job $job_id
 
-- modelrunner:queues:&lt;primary_id&gt;
+# create job and echo it's status
+job_id=$(mr_create_job test_job_2 "test" "@testing/sleep_count_8.zip")
+echo $(mr_job_status $job_id)
 
-  This is where it waits to be notified of a finished job
-
-Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
+# wait for it to complete or until 10 second timeout
+mr_wait_for_status $job_id "COMPLETE" 10
+echo "SUCCESS"
+```
 
 
 Installation and Deployment
@@ -119,23 +152,42 @@ There are several options for deployment ranging from a single server "dev" to m
 
 Here are the basic steps (assumes you have a python environment with fabric installed locally):
 
-1.  Bring up an Ubuntu/Debian instance(s) (henceforth referred to as "your_server")
+1.  Bring up an Ubuntu/Debian instance(s) (henceforth referred to as "your_server").  Make sure the package repositories are updated by running `apt-get update`.  
 
 2.  Create a user named 'mr' to run modelrunner under on your_server 
 
 3.  On your local machine, clone this repo and cd into the modelrunner directory (if not already done)
 
-4.  Setup the server via `fab -H mr@your_server setup:config_file=your_config.ini` (see sample config.ini for a guide)
+4.  Setup the server via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide)
 
 5.  Start the server via `fab -H mr@your_server start:configuration=<worker|primary>,environment=<dev|prod>` 
 
-For production deployments, we suggest using [nginx](http://wiki.nginx.org) as your primary static file server.
-See the sample devops/modelrunner.nginx config file.
+See fabfile.py for more automated deployment details/options.
 
-See fabfile.py for more details and options.
+For production deployments, we use [nginx](http://wiki.nginx.org) as the static file server on the primary and worker servers.  See the sample devops/<primary|worker>.nginx config file for details.
+
+Redis is hosted on the primary server, so you'll want to secure access to the redis port (default 6379) and only allow requests to it from worker ip addresses.  Using ufw for firewall protection with ports secured, this should allow redis access for the worker (to be run on primary server running Ubuntu):
+
+```
+ufw allow from <worker_ip_address> to any port 6379
+```
+
 
 Development & Testing
 -----------
 
-Once you've made changes to your branch, start up a primary and worker, run `./testing/test_full.sh` and
+Assumptions for setting up a development environment:
+- [anaconda](https://docs.continuum.io/anaconda/install) is installed (and some familiarity with it is useful)
+- This github repository has been cloned to your machine to `mr_src` directory and your are in that directory.
+
+A simple development environment with one primary and one worker can be setup via the following 
+
+```
+conda create -n modelrunner python=2.7
+source activate modelrunner
+python setup.py develop
+conda install redis
+```
+
+Once you've made changes to your branch, start up a primary and worker in dev mode, run `./testing/test_full.sh <server>` and
 ensure it's exit code is 0.

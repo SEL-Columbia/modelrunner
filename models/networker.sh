@@ -1,4 +1,5 @@
 #!/bin/bash
+# Run networker with given input, output and config
 
 input_dir=$1
 output_dir=$2

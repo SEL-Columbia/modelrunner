@@ -18,8 +18,8 @@
 ##
 
 server {
-	listen 8000 default_server;
-	listen [::]:8000 default_server ipv6only=on;
+	listen 8888 default_server;
+	listen [::]:8888 default_server ipv6only=on;
 
 	root /home/mr/modelrunner;
 	index index.html index.htm;
@@ -35,26 +35,3 @@ server {
 		# include /etc/nginx/naxsi.rules
 	}
 }
-
-       
-# Forward requests on 80 to 8080
-#
-server{
-    listen 80;
-    # server_name example.com;
- 
-    root /home/mr/modelrunner;
-    index index.html index.htm;
-
-
-    # access_log /home/path_to_site/access.log;
-    # error_log /home/path_to_site/error.log;
- 
-    location / {
-        proxy_pass http://0.0.0.0:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-

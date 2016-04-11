@@ -32,7 +32,7 @@
             <td>{{ getattr(job, "model", "") }}</td>
             <td>{{ str(getattr(job, "created", "")) }}</td>
             <td>{{ getattr(job, "status", "") }}</td>
-            <td>{% module JobOptions(job) %}</td>
+            <td>{% module JobOptions(job, admin) %}</td>
         </tr>
         {% end %}
         </tbody>
@@ -42,22 +42,22 @@
 {% block js %}
 <script>
 $(document).ready(function(){ 
-        // handle ajax submit
-        $("a.ajax_link").click(function(e){
-            e.preventDefault(); 
+    // handle ajax submit
+    $("a.ajax_link").click(function(e){
+        e.preventDefault(); 
 
-            var url = $(this).attr('href');
-            $.ajax({
-url: url,
-success: function(data){
-$("#message").html(data.message)
-},
-error: function(data){
-$("#message").html(data.message)
-},
-});
-            return false;
-            });
+        var url = $(this).attr('href');
+        $.ajax({
+            url: url,
+            success: function(data){
+                $("#message").html(data.message)
+            },
+            error: function(data){
+                $("#message").html(data.message)
+            },
         });
+        return false;
+    });
+});
 </script>
 {% end %}

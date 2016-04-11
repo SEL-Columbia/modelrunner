@@ -1,0 +1,8 @@
+server:
+    image: "cjon/sshd:0.1"
+    environment:
+        RUN_USER: 'mr'
+        AUTHORIZED_KEYS: 'YOUR_PUBLIC_KEY'
+    volumes:
+      - ./init-docker.sh:/init-docker.sh
+    command:  /init-docker.sh
