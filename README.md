@@ -172,6 +172,11 @@ Redis is hosted on the primary server, so you'll want to secure access to the re
 ufw allow from <worker_ip_address> to any port 6379
 ```
 
+### Troubleshooting
+
+When workers start, they wait for all model jobs.  This can result in multiple jobs running on the same server.  To prevent this, kill the unwanted model specific processes via `kill -s TERM $(cat job_worker_<model>.pid)`
+
+When workers are brought down it appears that client connections to redis sometimes remain.  These clients may consume a model job from the queue, making it disappear without being processed.  You can see these connections by doing a `client list` from `redis-cli`.  You can kill these connections with `client kill`.  
 
 Development & Testing
 -----------
