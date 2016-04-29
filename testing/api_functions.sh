@@ -25,7 +25,12 @@ function mr_create_job {
     local job_file=$3
     # temp file for response
     local tmpfile=$(mktemp -p $MR_TMP_DIR)
-    curl -s -F "job_name=$job_name" -F "model=$job_model" -F "zip_file=$job_file" http://$MR_SERVER/jobs > $tmpfile
+    if [[ $job_file =~ ^http[s]?:// ]]
+    then
+        curl -s -F "job_name=$job_name" -F "model=$job_model" -F "zip_url=$job_file" http://$MR_SERVER/jobs > $tmpfile
+    else
+        curl -s -F "job_name=$job_name" -F "model=$job_model" -F "zip_file=$job_file" http://$MR_SERVER/jobs > $tmpfile
+    fi
     # check if call was OK
     cat $tmpfile | mr_get_val_from_json message | grep OK > /dev/null
     cat $tmpfile | mr_get_val_from_json id
