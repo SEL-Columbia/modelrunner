@@ -30,7 +30,7 @@ if __name__ == '__main__':
     csv_file = os.path.join(args.input_directory, "metrics-local.csv")
     shp_file = os.path.join(args.input_directory, "networks-proposed.shp")
 
-    nwp = NetworkPlan(shp_file, csv_file, prioritize='Population')
+    nwp = NetworkPlan.from_files(shp_file, csv_file, prioritize='Population')
     model = EnergyMaximizeReturn(nwp)
 
     results = model.sequence()
