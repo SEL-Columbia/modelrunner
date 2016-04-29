@@ -1,3 +1,8 @@
+## 0.4.3
+
+- Support Sequencer v0.1.0
+- Update bash api to handle zips from url
+
 ## 0.4.2
 
 - Fixes bug #52.  
