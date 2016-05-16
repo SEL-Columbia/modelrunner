@@ -4,9 +4,10 @@ import os
 
 from fabric.api import task, env, run, settings, cd, put, sudo
 
+# These are the main arguments for tasks (i.e. included in **args)
+# Other arguments will be defined per task
 DEFAULTS = {
     'home': '/home/mr',
-    'configuration': 'primary',
     'config_file': 'config.ini',
     'environment': 'dev',
     'project': 'modelrunner',
@@ -62,7 +63,6 @@ def stop(**args):
     with cd(env.project_directory):
         run("./scripts/stop_processes.sh", pty=False)
 
-
 @task
 def setup(**args):
     """
@@ -87,23 +87,21 @@ def setup(**args):
     else:
         run_conda_enabled("./modelrunner/devops/setup_modelrunner.sh")
 
-    # setup sequencer and networker
-    run_conda_enabled("./modelrunner/devops/setup_sequencer.sh")
-    run_conda_enabled("./modelrunner/devops/setup_networker.sh")
-
 
 @task
-def setup_model(**args):
+def setup_model(model, **args):
     """
     Install or update the deployment of a model on a machine
     (should NOT wipeout any data)
     Assumes machine has been setup with mr user under /home/mr
+    
+    model:  model to setup or update
     """
     setup_env(**args)
 
     # find setup file
     setup_script = "./modelrunner/devops/setup_{model}.sh".\
-        format(model=args['model'])
+        format(model=model)
     # setup sequencer and networker
     run_conda_enabled(setup_script)
 
@@ -131,49 +129,39 @@ def update_modelrunner(**args):
     # deploy appropriate config file
     put(env.config_file, './modelrunner/config.ini')
 
-
-def start_primary():
+@task
+def start_primary(**args):
     """
     Start the primary server
     """
+    setup_env(**args)
+
+    # stop existing processes
+    stop()
+ 
+    print("starting primary server on %(host_string)s" % env)
     with cd(env.project_directory):
         if(env.environment == "prod"):
             run_in_conda_env("./scripts/start_primary_production.sh")
         else:
             run_in_conda_env("./scripts/start_primary.sh")
 
-
-def start_worker():
+@task
+def start_worker(model, **args):
     """
     Start the worker server
     """
-    with cd(env.project_directory):
-        if(env.environment == "prod"):
-            run_in_conda_env("./scripts/start_worker_production.sh")
-        else:
-            run_in_conda_env("./scripts/start_worker.sh")
-
-
-@task
-def start(**args):
-    """
-    Start server of a particular configuration/environment
-    (should NOT wipeout any data)
-    Assumes machine has been setup with mr user under /home/mr
-    """
     setup_env(**args)
-    print("starting %(configuration)s on %(host_string)s" % env)
-
-    start_config = {
-        'primary': start_primary,
-        'worker': start_worker
-    }
 
     # stop existing processes
     stop()
-    # start appropriate processes
-    start_config[env.configuration]()
-
+ 
+    print("starting worker model %s on %s" % (model, env['host_string']))
+    with cd(env.project_directory):
+        if(env.environment == "prod"):
+            run_in_conda_env("./scripts/start_worker_production.sh %s" % model)
+        else:
+            run_in_conda_env("./scripts/start_worker.sh %s" % model)
 
 def pull(repo, directory, branch="master"):
     with settings(warn_only=True):
