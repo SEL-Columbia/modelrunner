@@ -20,15 +20,13 @@ before_script:
   # setup primary, worker(s)
   - source activate modelrunner
   - ./scripts/start_primary.sh
-  - ./scripts/start_worker.sh
+  - ./scripts/start_worker.sh test
+  - ./scripts/start_worker.sh test_2
 script:
   - echo "in script"
   - sleep 1
   - for pid_file in *.pid; do p=`cat $pid_file`; echo "$pid_file $p"; done
   # test job runs to completion and then another is killed
-  - ./testing/test_full.sh localhost:8080
+  - ./testing/test_full.sh http://localhost:8080
    # test 2 jobs created, one is killed, other runs to completion 
-  - ./testing/test_queueing.sh localhost:8080
-  
-notifications:
-  irc: "irc.freenode.org#sel-columbia"
+  - ./testing/test_queueing.sh http://localhost:8080

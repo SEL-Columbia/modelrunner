@@ -120,7 +120,7 @@ Here's a session:
 
 ```
 # set the modelrunner instance primary server and temp dir
-MR_SERVER=127.0.0.1
+MR_SERVER=http://127.0.0.1
 # temp dir to store all working data
 MR_TMP_DIR=$(mktemp -d)
 
@@ -158,9 +158,15 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 3.  On your local machine, clone this repo and cd into the modelrunner directory (if not already done)
 
-4.  Setup the server via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide)
+4.  Update your config files for your primary and workers.  See modelrunner/config.py for parameter definitions.
 
-5.  Start the server via `fab -H mr@your_server start:configuration=<worker|primary>,environment=<dev|prod>` 
+5.  Setup the servers via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide).  Note that this step is independent of whether the server is a primary or worker server.
+
+6.  For workers, setup the model to be run via `fab -H mr@your_server setup_model:model=<model_name>`.  Note that some models may not require this step.  It's also recommended that only one model be run per worker.  
+
+7.  Start servers:
+    1.  Start a primary server via `fab -H mr@your_server start_primary:environment=<dev|prod>` 
+    2.  Start a worker for a particular model via `fab -H mr@your_server start_worker:model=<model_name>,environment=<dev|prod>` (if needed, make sure that step 6 was performed for that model on that worker server) 
 
 See fabfile.py for more automated deployment details/options.
 
