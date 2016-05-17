@@ -1,3 +1,8 @@
+## 0.4.4
+
+- Make deployment more geared toward single model per worker
+- Closes #57
+
 ## 0.4.3
 
 - Support Sequencer v0.1.0
