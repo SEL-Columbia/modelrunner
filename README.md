@@ -202,3 +202,21 @@ conda install redis
 
 Once you've made changes to your branch, start up a primary and worker in dev mode, run `./testing/test_full.sh <server>` and
 ensure it's exit code is 0.
+
+### Testing via Docker
+
+You can setup a primary and several workers in a sandbox quickly via docker.  
+
+Currently you'll need a docker image with ssh enabled so you can setup the servers via fabric.
+
+A recommended docker and docker-compose installation, ssh image and compose file is available [here](https://github.com/chrisnatali/devops/tree/master/docker).  Following the guidelines there, you can setup a primary and 2 servers ready for deployment via:
+
+```
+docker-compose -p primary up -d server
+docker-compose -p worker1 up -d server
+docker-compose -p worker2 up -d server
+```
+
+Then get the ip addresses and setup the servers via steps 4-7 from the deployment steps above.  
+
+If you want to pass through the ports and/or the worker ip addresses to the host (e.g. to test the web site manually), you may need to create custom docker-compose files (really straightforward following docker documentation)
