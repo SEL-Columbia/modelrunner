@@ -20,7 +20,8 @@ before_script:
   # setup primary, worker(s)
   - source activate modelrunner
   - ./scripts/start_primary.sh
-  - ./scripts/start_worker.sh
+  - ./scripts/start_worker.sh test
+  - ./scripts/start_worker.sh test_2
 script:
   - echo "in script"
   - sleep 1

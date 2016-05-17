@@ -81,7 +81,6 @@ def setup(**args):
     run("./modelrunner/devops/setup.sh")
 
     # create environ for modelrunner
-
     if(env.environment == "dev"):
         run_conda_enabled("./modelrunner/devops/setup_modelrunner_dev.sh")
     else:
@@ -153,9 +152,6 @@ def start_worker(model, **args):
     """
     setup_env(**args)
 
-    # stop existing processes
-    stop()
- 
     print("starting worker model %s on %s" % (model, env['host_string']))
     with cd(env.project_directory):
         if(env.environment == "prod"):
