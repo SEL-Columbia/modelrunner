@@ -157,18 +157,26 @@ class JobHandler(tornado.web.RequestHandler):
             job_uuid (str):  If not None, the job id to retrieve json for
         """
 
+        def job_dict(job):
+            return DateTimeEncoder().encode(job.__dict__)
+
         if(job_uuid):  # single job info
             job = self.job_mgr.get_job(job_uuid)
-            json_job = DateTimeEncoder().encode(job.__dict__)
-            self.write(json_job)
+            self.write(job_json(job))
             self.finish()
         else:
             # TODO:  refactor to return only job json
             #        for js to render
             jobs = self.job_mgr.get_jobs()
+
             # order descending
             jobs.sort(key=lambda job: job.created, reverse=True)
-            self.render("view_jobs.html", jobs=jobs, admin=False)
+
+            # handle json request
+            if 'application/json' in self.request.headers.get('Accept', ''):
+                self.write({'job_list': [job_dict(job) for job in jobs]})
+            else:
+                self.render("view_jobs.html", jobs=jobs, admin=False)
 
 
 class AdminHandler(tornado.web.RequestHandler):
