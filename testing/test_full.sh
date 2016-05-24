@@ -24,7 +24,8 @@ trap mr_cleanup EXIT
 
 # ensure that job list is empty to start
 echo "checking that there are no jobs yet"
-if [[ "{\"data\": []}" != $(mr_get_jobs) ]]
+num_jobs=$(mr_get_jobs | python -c "import sys, json; print len(json.load(sys.stdin)[\"data\"])")
+if [ $num_jobs -ne 0 ]
 then
     exit 1
 fi
@@ -81,7 +82,6 @@ mr_wait_for_status $job_long_id "FAILED" 2
 # we should have 4 jobs now
 echo "checking that there are 4 jobs"
 num_jobs=$(mr_get_jobs | python -c "import sys, json; print len(json.load(sys.stdin)[\"data\"])")
-echo "$num_jobs jobs"
 if [ $num_jobs -ne 4 ]
 then
     exit 1

@@ -156,7 +156,7 @@ Here's a session:
 
 ```
 # set the modelrunner instance primary server and temp dir
-MR_SERVER=http://127.0.0.1
+MR_SERVER=http://127.0.0.1:8080
 # temp dir to store all working data
 MR_TMP_DIR=$(mktemp -d)
 
