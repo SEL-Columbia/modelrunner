@@ -13,12 +13,12 @@ install:
   - conda info -a
   # setup modelrunner
   - conda create -n modelrunner python=2.7
-  - conda install --yes -c https://conda.anaconda.org/sel -n modelrunner modelrunner
 services:
   - redis-server
 before_script:
   # setup primary, worker(s)
   - source activate modelrunner
+  - python setup.py install
   - ./scripts/start_primary.sh
   - ./scripts/start_worker.sh test
   - ./scripts/start_worker.sh test_2
