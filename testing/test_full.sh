@@ -22,6 +22,13 @@ MR_TEST_SRC_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 trap mr_cleanup EXIT
 
+# ensure that job list is empty to start
+echo "checking that there are no jobs yet"
+if [[ "{\"data\": []}" != $(mr_get_jobs) ]]
+then
+    exit 1
+fi
+
 # kick off a job
 echo "creating new job"
 job_id=$(mr_create_job test_full_`date +%Y-%m-%d_%H:%M:%S` "test" "@testing/sleep_count_8.zip")
@@ -71,6 +78,14 @@ mr_kill_job $job_long_id
 echo "waiting for job $job_long_id to go FAILED"
 mr_wait_for_status $job_long_id "FAILED" 2
 
+# we should have 4 jobs now
+echo "checking that there are 4 jobs"
+num_jobs=$(mr_get_jobs | python -c "import sys, json; print len(json.load(sys.stdin)[\"data\"])")
+echo "$num_jobs jobs"
+if [ $num_jobs -ne 4 ]
+then
+    exit 1
+fi
 
 # disable the trap now
 trap - EXIT

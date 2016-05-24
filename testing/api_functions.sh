@@ -52,6 +52,12 @@ function mr_job_status {
     cat $tmpfile | mr_get_val_from_json status
 }
 
+function mr_get_jobs {
+    # get the job status
+    local tmpfile=$(mktemp -p $MR_TMP_DIR)
+    curl -s -H 'Accept: application/json' $MR_SERVER/jobs
+}
+
 function mr_wait_for_status {
     # wait for job to change status
     local job_id=$1

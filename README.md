@@ -106,10 +106,46 @@ API (Primary Server)
 
     ```
 
-- /jobs (get)
+- /jobs 
 
-    Get all jobs (returns an html view for now)
+    Get all jobs
 
+    When http 'Accept' header does not contain 'application/json', then this returns an html view
+
+    When http 'Accept' contains 'application/json', then this returns a json dict of the jobs
+
+    ```
+    curl -H 'Accept: application/json' http://localhost:8080/jobs
+
+    {
+        "data": [
+            {
+                "created": "2016-05-24T19:01:10.429422",
+                "model": "test",
+                "name": "test_full_kill_2016-05-24_15:01:10",
+                "on_primary": true,
+                "primary_data_dir": "data",
+                "primary_url": "http://localhost:8000",
+                "status": "FAILED",
+                "uuid": "26b8ab04-56a1-4614-83f6-5df843b33072",
+                "worker_data_dir": "worker_data",
+                "worker_url": "http://localhost:8888"
+            },
+            {
+                "created": "2016-05-24T19:01:01.981654",
+                "model": "test",
+                "name": "test_full_2016-05-24_15:01:01",
+                "on_primary": true,
+                "primary_data_dir": "data",
+                "primary_url": "http://localhost:8000",
+                "status": "COMPLETE",
+                "uuid": "d5f31f4d-22ae-4636-9caa-79362a959ba8",
+                "worker_data_dir": "worker_data",
+                "worker_url": "http://localhost:8888"
+            }
+        ]
+    }
+    ```
 
 Bash API
 --------
@@ -143,6 +179,11 @@ mr_wait_for_status $job_id "COMPLETE" 10
 echo "SUCCESS"
 ```
 
+See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you need to delete the jobs first via something like:
+
+```
+./scripts/job_list.py | sed -n '2,$p' | awk -F, '{ print $NF }' | ./scripts/job_delete.py
+```
 
 Installation and Deployment
 ---------------------------
