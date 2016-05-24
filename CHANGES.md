@@ -1,3 +1,7 @@
+## 0.4.5
+
+- Add json output for jobs endpoint
+
 ## 0.4.4
 
 - Make deployment more geared toward single model per worker
