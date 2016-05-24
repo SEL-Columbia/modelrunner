@@ -28,6 +28,5 @@ script:
   - for pid_file in *.pid; do p=`cat $pid_file`; echo "$pid_file $p"; done
   # test job runs to completion and then another is killed
   - ./testing/test_full.sh http://localhost:8080
-  - cat job_server.log
    # test 2 jobs created, one is killed, other runs to completion 
   - ./testing/test_queueing.sh http://localhost:8080
