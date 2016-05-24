@@ -54,7 +54,6 @@ function mr_job_status {
 
 function mr_get_jobs {
     # get the job status
-    local tmpfile=$(mktemp -p $MR_TMP_DIR)
     curl -s -H 'Accept: application/json' $MR_SERVER/jobs
 }
 
