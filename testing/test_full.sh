@@ -49,9 +49,9 @@ mr_wait_for_status $job_kill_id "RUNNING" 2
 echo "attempting to kill job $job_kill_id"
 mr_kill_job $job_kill_id
 
-# ensure that eventually the status of the killed job goes to "FAILED"
-echo "waiting for job $job_kill_id to go FAILED"
-mr_wait_for_status $job_kill_id "FAILED" 2
+# ensure that eventually the status of the killed job goes to "KILLED"
+echo "waiting for job $job_kill_id to go KILLED"
+mr_wait_for_status $job_kill_id "KILLED" 2
 
 # ensure that we can kill 2nd job while 1st job is running
 echo "creating long running job"
@@ -67,17 +67,15 @@ mr_wait_for_status $job_2_id "RUNNING" 2
 echo "attempting to kill job $job_2_id"
 mr_kill_job $job_2_id
 
-# ensure that eventually the status of the killed job goes to "FAILED"
-echo "waiting for job $job_2_id to go FAILED"
-mr_wait_for_status $job_2_id "FAILED" 2
+echo "waiting for job $job_2_id to go KILLED"
+mr_wait_for_status $job_2_id "KILLED" 2
 
 # test killing long running job
 echo "attempting to kill job $job_long_id"
 mr_kill_job $job_long_id
 
-# ensure that eventually the status of the killed job goes to "FAILED"
-echo "waiting for job $job_long_id to go FAILED"
-mr_wait_for_status $job_long_id "FAILED" 2
+echo "waiting for job $job_long_id to go KILLED"
+mr_wait_for_status $job_long_id "KILLED" 2
 
 # we should have 4 jobs now
 echo "checking that there are 4 jobs"
