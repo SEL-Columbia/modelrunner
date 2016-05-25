@@ -1,3 +1,8 @@
+## 0.4.6
+
+- Used QUEUED and KILLED status for jobs
+- Allow Kill for QUEUED jobs
+
 ## 0.4.5
 
 - Add json output for jobs endpoint
