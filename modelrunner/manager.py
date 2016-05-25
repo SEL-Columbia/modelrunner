@@ -21,6 +21,9 @@ from zipfile import ZipFile
 # setup log
 logger = logging.getLogger('modelrunner')
 
+# Exceptions
+class JobNotFound(Exception):
+    pass
 
 def fetch_file_from_url(url, destination_dir, file_name=None):
     """
@@ -167,6 +170,7 @@ class JobManager:
     STATUS_PROCESSED = "PROCESSED"
     STATUS_COMPLETE  = "COMPLETE"
     STATUS_FAILED    = "FAILED"
+    STATUS_KILLED    = "KILLED"
 
     def __init__(
             self,
@@ -201,6 +205,10 @@ class JobManager:
 
     def hget(self, hash_name, key):
         json_job = self.rdb.hget(hash_name, key)
+        if not json_job:
+            raise JobNotFound("job {} not found in hash {}".\
+                              format(key, hash_name))
+
         return json.loads(json_job, object_hook=decode_job)
 
     def hgetall(self, hash_name):
@@ -270,9 +278,9 @@ class JobManager:
         # add to global job list then queue it to be run
         job.primary_url = self.primary_url
         job.primary_data_dir = self.data_dir  # to know where output.zip is
+        job.status = JobManager.STATUS_QUEUED
         self.add_update_job_table(job)
         job_queue = "modelrunner:queues:{}".format(job.model)
-
         logger.info("adding job {} to queue {}".format(job.uuid, job_queue))
         self.rdb.rpush(job_queue, job.uuid)
 
@@ -297,7 +305,14 @@ class JobManager:
         logger.info("waiting for job on queue {}".format(job_queue))
         result = self.rdb.blpop(job_queue)
         uuid = result[1]
-        job = self.get_job(uuid)
+        try:
+            job = self.get_job(uuid)
+        except JobNotFound as e:
+            # JobNotFound is not worth re-raising (making it an error)
+            logger.warn(e)
+            logger.warn("Jobs were removed without removing "
+                        "corresponding queue entry")
+            return
 
         # assign the job to this worker
         job.worker_url = self.worker_url
@@ -389,7 +404,10 @@ class JobManager:
             self._prep_output(job)
             job.status = JobManager.STATUS_PROCESSED
         else:
-            job.status = JobManager.STATUS_FAILED
+            if wk.killed:
+                job.status = JobManager.STATUS_KILLED
+            else:
+                job.status = JobManager.STATUS_FAILED
 
         self.add_update_job_table(job)
 
@@ -441,11 +459,26 @@ class JobManager:
         Args:
             job (modelrunner.Job):  job instance
         """
-        worker_queue = "modelrunner:queues:{}:{}".format(job.worker_url, job.model)
-        logger.info("sending message to kill job on worker {}:{}".\
-                    format(job.worker_url, job.model))
-        message = {'command': "KILL", 'job_uuid': job.uuid}
-        self.rdb.rpush(worker_queue, pickle.dumps(message))
+        
+        if job.status == JobManager.STATUS_QUEUED:
+            # case 1:  job is in QUEUED state
+            #          remove it from the queue and mark as killed
+            job_queue = "modelrunner:queues:{}".format(job.model)
+            logger.info("killing job {} by removing from queue {}".format(job.uuid, job_queue))
+            self.rdb.lrem(job_queue, job.uuid)
+            job.status = JobManager.STATUS_KILLED
+            self.add_update_job_table(job)
+        elif job.status == JobManager.STATUS_RUNNING:
+            # case 2:  job is in RUNNING state
+            #          send message to worker to kill the job (worker will update its status)
+            worker_queue = "modelrunner:queues:{}:{}".format(job.worker_url, job.model)
+            logger.info("sending message to kill job on worker {}:{}".\
+                        format(job.worker_url, job.model))
+            message = {'command': "KILL", 'job_uuid': job.uuid}
+            self.rdb.rpush(worker_queue, pickle.dumps(message))
+        else:
+            logger.info("kill called on job {} in incompatible state {}".\
+                        format(job.uuid, job.status))
 
     def _prep_input(self, job):
         """ fetch (if needed) and unzip data to appropriate dir """
@@ -587,8 +620,8 @@ class JobEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def decode_job(dict):
+def decode_job(job_dict):
     """
     Decode a job from a dict (useful for JSON decoding)
     """
-    return Job(**dict)
+    return Job(**job_dict)

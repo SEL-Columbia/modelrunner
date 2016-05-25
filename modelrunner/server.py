@@ -236,6 +236,11 @@ class JobOptionsModule(tornado.web.UIModule):
         href_templ = "<a href=%s>%s</a>"
         # may be confusing, but we need to make kill links ajax
         href_ajax_templ = "<a class='ajax_link' href=%s>%s</a>"
+        if job.status == mgr.JobManager.STATUS_QUEUED:
+            if admin:
+                kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
+                return "%s" % kill_option
+
         if job.status == mgr.JobManager.STATUS_RUNNING:
             log_option = href_templ % (job.log_url(), "Log")
             if admin:
