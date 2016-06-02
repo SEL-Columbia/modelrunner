@@ -36,7 +36,7 @@ for log_file in sys.stdin:
                 else:
                     model_dict['model'] = 'modelrunner'
 
-                m = re.search(r'/(?P<py_file>[^"/]*)", line (?P<py_line>\d*)', line)
+                m = re.search(r'/(?P<py_file>[^"]*)", line (?P<py_line>\d*)', line)
                 model_dict.update(m.groupdict())
                 record.update(model_dict)
 
@@ -47,15 +47,22 @@ for log_file in sys.stdin:
             record.update(m.groupdict())
             records.append(record)
 
+def format_csv_cell(cell_string):
+    new_cell = '"%s"' % (re.sub(r'"', '\\"', cell_string))
+    return new_cell
+
 if len(records) > 0:
     if args.aggregate_fields:
         key_fun = lambda rec: " ".join(map(rec.get, args.aggregate_fields))
 
         records.sort(key=key_fun)
         for key, group in itertools.groupby(records, key_fun):
-            print("%s, %s" % (key, len(list(group))))
+            print("%s,%s" % (key, len(list(group))))
     else:
         keys = sorted(records[0].keys())
         print(",".join(keys))
         for record in records:
-            print(",".join(map(lambda k: str(record.get(k, '')), keys)))
+            print(",".join(map(
+                            lambda k: 
+                            format_csv_cell(str(record.get(k, ''))), 
+                            keys)))
