@@ -1,5 +1,5 @@
 component,count,error_category,error_type,description
-cost_calculator,40,METRIC_MODEL,InvalidMetricNodeFile,Variable value invalid (i.e. got '1000,0' expected '1000.0', or got NA expected Float)
+cost_calculator,40,METRIC_MODEL,InvalidMetricNodeFile,"Variable value invalid (i.e. got '1000,0' expected '1000.0', or got NA expected Float)"
 cost_calculator,25,FILE_FORMAT,InvalidConfig,Metrics JSON invalid
 cost_calculator,22,METRIC_MODEL,InvalidMetricNodeVariable,Variable value invalid (i.e. household count should be positive)
 sequencer,14,FILE_FORMAT,InvalidShapefile,Projection Missing
