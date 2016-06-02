@@ -12,7 +12,7 @@ sequencer,4,FILE_MISSING,MissingNetwork,Missing network shapefile
 sequencer,4,FILE_FORMAT,InvalidShapefile,Shapefile conversion to networkx graph had nodes id'd by floats
 networker,4,TOPOLOGY,ToleranceViolation,Edges less than 0.5 meters
 networker,3,PROJECTION,ProjectionMismatch,Node Proj not matching Network
-cost_calculator,3,FILE_MISSING,MissingNodes 
+cost_calculator,3,FILE_MISSING,MissingNodes,Missing nodes csv
 cost_calculator,2,METRIC_MODEL,InvalidMetricNodeFile,CSV did not match metric model expected header 
 cost_calculator,2,FILE_MISSING,MissingConfig,Metric Model Params
 sequencer,1,PROJECTION,ProjectionMismatch,Node Proj not matching Network
