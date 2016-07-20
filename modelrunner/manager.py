@@ -16,6 +16,7 @@ import threading
 import subprocess
 import zipfile
 import shutil
+import psutil
 from zipfile import ZipFile
 
 # setup log
@@ -110,6 +111,8 @@ class WaitForKill(threading.Thread):
         stop this thread.
         """
 
+        logger.info("WaitForKill of job {} running with pid {}".format(self.job_uuid, self.popen_proc.pid))
+
         # check for other threads
         existing_threads = filter(lambda x: isinstance(x, WaitForKill), 
                                   threading.enumerate())
@@ -128,10 +131,16 @@ class WaitForKill(threading.Thread):
 
             if(job_uuid == self.job_uuid):
                 if(command == "KILL"):
-                    logger.info("Terminating pid {}".\
-                                format(self.popen_proc.pid))
+                    # if subprocess spawned any children, we need to kill 
+                    # them first
+                    parent = psutil.Process(self.popen_proc.pid)
+                    for child in parent.children(recursive=True):
+                        logger.info("Killing child pid {}".format(child.pid))
+                        child.kill()
+                    logger.info("Killing parent pid {}".format(parent.pid))
+                    parent.kill()
+                    # TODO:  Any reason to wait on kill?
                     self.killed = True
-                    self.popen_proc.terminate()
 
                 if(command == "BREAK"):
                     logger.info("Stop waiting for commands for job {}".\
@@ -373,6 +382,7 @@ class JobManager:
                         stdout=job_data_log,
                         stderr=job_data_log)
 
+        logger.info("job {} running with pid {}".format(job.uuid, popen_proc.pid))
         worker_queue = "modelrunner:queues:{}:{}".format(self.worker_url, 
                                                          model_name)
         wk = WaitForKill(self.rdb, worker_queue, popen_proc, job.uuid)
@@ -386,7 +396,7 @@ class JobManager:
                                                                  return_code))
                                                                  
         # * This handles a race condition between parent being notified of
-        # * killed sub-process and this thread being cleaned up
+        # * killed sub-process and the WaitForKill thread being cleaned up
         # * without this, it's possible for extra "BREAK" command to be sent
         # * to another worker's WaitForKill 
         # * (which should be harmless, but confusing)
