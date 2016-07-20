@@ -1,3 +1,7 @@
+## 0.4.7
+
+- Fix kill bug #66
+
 ## 0.4.6
 
 - Used QUEUED and KILLED status for jobs
