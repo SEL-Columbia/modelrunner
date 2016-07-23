@@ -11,13 +11,12 @@ import redis
 import re
 import pickle
 import logging
-import urllib2
 import threading
 import subprocess
-import zipfile
-import shutil
 import psutil
 from zipfile import ZipFile
+from modelrunner import settings
+from modelrunner.utils import fetch_file_from_url, zipdir
 
 # setup log
 logger = logging.getLogger('modelrunner')
@@ -26,74 +25,20 @@ logger = logging.getLogger('modelrunner')
 class JobNotFound(Exception):
     pass
 
-def fetch_file_from_url(url, destination_dir, file_name=None):
-    """
-    Utility function for retrieving a remote file from a url
-
-    Args:
-        url (str):  http based url for file to retrieve
-        destination_dir (str):  local dir to place file in
-        file_name (str):  name of local copy of file (if None glean from url)
-
-    Exceptions:  will propagate any exception occuring during copy
-    """
-
-    dest_file_name = file_name
-    if(not dest_file_name):
-        dest_file_name = url.split('/')[-1]
-
-    destination_file = os.path.join(destination_dir, dest_file_name)
-    logger.info("Downloading from url {}".format(url))
-    source = urllib2.urlopen(url)
-    dest = open(destination_file, 'wb')
-    try:
-        shutil.copyfileobj(source, dest)
-    except:
-        logger.error("Failed to retrieve file from url {}".format(url))
-        raise
-    finally:
-        source.close()
-        dest.close()
-
-    logger.info("Finished retrieving file from url {}".format(url))
-
-
-def zipdir(path, zip_file_name):
-    """
-    Recursively zip up a directory
-
-    Args:
-        path (str):  local path of dir to be zipped
-        zip_file_name (str):  name of zip to be created
-    """
-
-    output_zip = ZipFile(zip_file_name, 'w')
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            rel_path = os.path.relpath(os.path.join(root, file), path)
-            output_zip.write(
-                os.path.join(root, file),
-                arcname=rel_path,
-                compress_type=zipfile.ZIP_DEFLATED)
-
-    output_zip.close()
-
 
 class WaitForKill(threading.Thread):
     """
     Thread used by JobManager to wait for kills while process is running
 
     Attributes:
-        redis_obj (redis.Redis):  Redis connection instance
         worker_queue (str):  name of worker queue to listen for commands
         popen_proc (subprocess):  subprocess running job to be managed
         job_uuid (str):  uuid of job managed by this thread
 
     """
 
-    def __init__(self, redis_obj, worker_queue, popen_proc, job_uuid):
+    def __init__(self, worker_queue, popen_proc, job_uuid):
         threading.Thread.__init__(self)
-        self.redis_obj = redis_obj
         self.worker_queue = worker_queue
         self.popen_proc = popen_proc
         self.job_uuid = job_uuid
@@ -122,7 +67,7 @@ class WaitForKill(threading.Thread):
 
         while(True):
             # block on queue and unpickle message dict when it arrives
-            raw_message = self.redis_obj.blpop(self.worker_queue)[1]
+            raw_message = settings.redis_connection.blpop(self.worker_queue)[1]
             message = pickle.loads(raw_message)
             job_uuid = message['job_uuid']
             command = message['command']
@@ -164,7 +109,6 @@ class JobManager:
         available to Primary with a notification
 
     Attributes:
-        rdb (redis.Redis):  Redis DB connection
         primary_url (str):  url of Primary server
         worker_url (str):  url of Worker server
         model_commands (dict str -> str):  model -> command to run model via
@@ -183,22 +127,12 @@ class JobManager:
 
     def __init__(
             self,
-            redis_url,
             primary_url,
             worker_url,
             data_dir,
             model_commands,
             worker_is_primary=True):
 
-        port_re = re.compile(r'(?<=:)\d+$')
-        host_re = re.compile(r'^.*(?=:\d+$)')
-        redis_host_match = host_re.search(redis_url)
-        redis_port_match = port_re.search(redis_url)
-        if(not redis_host_match or not redis_port_match):
-            raise ValueError("invalid redis url: {}".format(redis_url))
-
-        self.rdb = redis.Redis(host=redis_host_match.group(0),
-                               port=redis_port_match.group(0))
         self.primary_url = primary_url
         self.worker_url = worker_url
         self.model_commands = model_commands
@@ -210,10 +144,10 @@ class JobManager:
     # <wrappers> (for storing/retrieveing jobs in Redis)
     def hset(self, hash_name, key, job):
         json_job = json.dumps(job, cls=JobEncoder)
-        self.rdb.hset(hash_name, key, json_job)
+        settings.redis_connection.hset(hash_name, key, json_job)
 
     def hget(self, hash_name, key):
-        json_job = self.rdb.hget(hash_name, key)
+        json_job = settings.redis_connection.hget(hash_name, key)
         if not json_job:
             raise JobNotFound("job {} not found in hash {}".\
                               format(key, hash_name))
@@ -221,7 +155,7 @@ class JobManager:
         return json.loads(json_job, object_hook=decode_job)
 
     def hgetall(self, hash_name):
-        json_jobs = self.rdb.hgetall(hash_name)
+        json_jobs = settings.redis_connection.hgetall(hash_name)
         return [json.loads(json_job[1], object_hook=decode_job) 
                 for json_job in json_jobs.items()]
     # </wrappers>
@@ -291,7 +225,7 @@ class JobManager:
         self.add_update_job_table(job)
         job_queue = "modelrunner:queues:{}".format(job.model)
         logger.info("adding job {} to queue {}".format(job.uuid, job_queue))
-        self.rdb.rpush(job_queue, job.uuid)
+        settings.redis_connection.rpush(job_queue, job.uuid)
 
     def wait_for_new_jobs(self, model_name):
         """
@@ -312,7 +246,7 @@ class JobManager:
         """
         job_queue = "modelrunner:queues:{}".format(model_name)
         logger.info("waiting for job on queue {}".format(job_queue))
-        result = self.rdb.blpop(job_queue)
+        result = settings.redis_connection.blpop(job_queue)
         uuid = result[1]
         try:
             job = self.get_job(uuid)
@@ -355,7 +289,7 @@ class JobManager:
             job_data_log.write(failure_msg)
             job.status = JobManager.STATUS_FAILED
             self.add_update_job_table(job)
-            self.rdb.rpush(primary_queue, job.uuid)
+            settings.redis_connection.rpush(primary_queue, job.uuid)
             job_data_log.close()
             raise
 
@@ -385,7 +319,7 @@ class JobManager:
         logger.info("job {} running with pid {}".format(job.uuid, popen_proc.pid))
         worker_queue = "modelrunner:queues:{}:{}".format(self.worker_url, 
                                                          model_name)
-        wk = WaitForKill(self.rdb, worker_queue, popen_proc, job.uuid)
+        wk = WaitForKill(worker_queue, popen_proc, job.uuid)
         wk.start()
 
         # wait for command to finish or for it to be killed
@@ -403,7 +337,7 @@ class JobManager:
         if (not wk.killed) and wk.isAlive():
             # send a message to stop the wait for kill thread
             message = {'command': "BREAK", 'job_uuid': job.uuid}
-            self.rdb.rpush(worker_queue, pickle.dumps(message))
+            settings.redis_connection.rpush(worker_queue, pickle.dumps(message))
 
         logger.info("finished processing job, notifying primary server {}".\
                     format(self.primary_url))
@@ -422,7 +356,7 @@ class JobManager:
         self.add_update_job_table(job)
 
         # notify primary server job is done
-        self.rdb.rpush(primary_queue, job.uuid)
+        settings.redis_connection.rpush(primary_queue, job.uuid)
 
     def wait_for_finished_jobs(self):
         """
@@ -436,7 +370,7 @@ class JobManager:
         primary_queue = "modelrunner:queues:" + self.primary_url
         logger.info("waiting for finished jobs on queue {}".\
                     format(primary_queue))
-        result = self.rdb.blpop(primary_queue)
+        result = settings.redis_connection.blpop(primary_queue)
         uuid = result[1]
         job = self.get_job(uuid)
 
@@ -475,7 +409,7 @@ class JobManager:
             #          remove it from the queue and mark as killed
             job_queue = "modelrunner:queues:{}".format(job.model)
             logger.info("killing job {} by removing from queue {}".format(job.uuid, job_queue))
-            self.rdb.lrem(job_queue, job.uuid)
+            settings.redis_connection.lrem(job_queue, job.uuid)
             job.status = JobManager.STATUS_KILLED
             self.add_update_job_table(job)
         elif job.status == JobManager.STATUS_RUNNING:
@@ -485,7 +419,7 @@ class JobManager:
             logger.info("sending message to kill job on worker {}:{}".\
                         format(job.worker_url, job.model))
             message = {'command': "KILL", 'job_uuid': job.uuid}
-            self.rdb.rpush(worker_queue, pickle.dumps(message))
+            settings.redis_connection.rpush(worker_queue, pickle.dumps(message))
         else:
             logger.info("kill called on job {} in incompatible state {}".\
                         format(job.uuid, job.status))

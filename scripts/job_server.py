@@ -21,6 +21,7 @@ import tornado.gen
 
 import modelrunner as mr
 import modelrunner.server as server
+import modelrunner.settings as settings
 
 # setup log
 logger = logging.getLogger('modelrunner')
@@ -33,18 +34,20 @@ logger.info("modelrunner %s (Python %s)" %
 parse_command_line()
 parse_config_file(config.options.config_file)
 
-# get the command_ keys
+# get the command keys
 command_dict = config.options.group_dict("model_command")
 models = command_dict.keys()
 
-jm = mr.JobManager(config.options.redis_url,
-                   config.options.primary_url,
+# initialize the global application settings
+settings.init_redis_connection(config.options.redis_url)
+
+jm = mr.JobManager(config.options.primary_url,
                    config.options.worker_url,
                    config.options.data_dir,
                    command_dict,
                    config.options.worker_is_primary)
 
-settings = {
+app_settings = {
     "static_path": config.options.static_path,
 }
 
@@ -63,7 +66,7 @@ application = tornado.web.Application([
         template_path=config.options.template_path,
         debug=config.options.debug,
         ui_modules={'JobOptions': server.JobOptionsModule},
-        **settings
+        **app_settings
         )
 
 logger.info("modelrunner server listening on port %s" % config.options.port)
