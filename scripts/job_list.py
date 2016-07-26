@@ -26,7 +26,7 @@ parse_config_file(config.options.config_file)
 command_dict = config.options.group_dict("model_command")
 
 # initialize the global application settings
-settings.init_redis_connection(config.options.redis_url)
+settings._redis_url = config.options.redis_url
 
 jm = mr.JobManager(config.options.primary_url,
                    config.options.worker_url,

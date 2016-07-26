@@ -20,7 +20,7 @@ parse_config_file(config.options.config_file)
 command_dict = config.options.group_dict("model_command")
 
 # initialize the global application settings
-settings.init_redis_connection(config.options.redis_url)
+settings._redis_url = config.options.redis_url
 
 jm = mr.JobManager(config.options.primary_url,
                    config.options.worker_url,
@@ -29,4 +29,4 @@ jm = mr.JobManager(config.options.primary_url,
                    config.options.worker_is_primary)
 
 for uuid in [l.rstrip() for l in sys.stdin.readlines()]:
-    settings.redis_connection.hdel("modelrunner:jobs", uuid)
+    settings.redis_connection().hdel("modelrunner:jobs", uuid)

@@ -4,7 +4,6 @@ Module for managing job running and sync between primary and workers
 """
 
 import os
-from uuid import uuid4
 import datetime
 import json
 import redis
@@ -15,8 +14,16 @@ import threading
 import subprocess
 import psutil
 from zipfile import ZipFile
-from modelrunner import settings
 from modelrunner.utils import fetch_file_from_url, zipdir
+
+# initialize redisent (TODO:  Factor this out)
+from modelrunner import settings
+from modelrunner.redisent import RedisEntity
+from modelrunner import Job
+
+# initialize connection 
+RedisEntity._db = settings.redis_connection()
+RedisEntity._prefix = "modelrunner"
 
 # setup log
 logger = logging.getLogger('modelrunner')
@@ -24,7 +31,6 @@ logger = logging.getLogger('modelrunner')
 # Exceptions
 class JobNotFound(Exception):
     pass
-
 
 class WaitForKill(threading.Thread):
     """
@@ -67,7 +73,7 @@ class WaitForKill(threading.Thread):
 
         while(True):
             # block on queue and unpickle message dict when it arrives
-            raw_message = settings.redis_connection.blpop(self.worker_queue)[1]
+            raw_message = settings.redis_connection().blpop(self.worker_queue)[1]
             message = pickle.loads(raw_message)
             job_uuid = message['job_uuid']
             command = message['command']
@@ -116,15 +122,6 @@ class JobManager:
 
     """
 
-    # Job Statuses
-    STATUS_CREATED   = "CREATED"
-    STATUS_QUEUED    = "QUEUED"
-    STATUS_RUNNING   = "RUNNING"
-    STATUS_PROCESSED = "PROCESSED"
-    STATUS_COMPLETE  = "COMPLETE"
-    STATUS_FAILED    = "FAILED"
-    STATUS_KILLED    = "KILLED"
-
     def __init__(
             self,
             primary_url,
@@ -144,10 +141,10 @@ class JobManager:
     # <wrappers> (for storing/retrieveing jobs in Redis)
     def hset(self, hash_name, key, job):
         json_job = json.dumps(job, cls=JobEncoder)
-        settings.redis_connection.hset(hash_name, key, json_job)
+        settings.redis_connection().hset(hash_name, key, json_job)
 
     def hget(self, hash_name, key):
-        json_job = settings.redis_connection.hget(hash_name, key)
+        json_job = settings.redis_connection().hget(hash_name, key)
         if not json_job:
             raise JobNotFound("job {} not found in hash {}".\
                               format(key, hash_name))
@@ -155,7 +152,7 @@ class JobManager:
         return json.loads(json_job, object_hook=decode_job)
 
     def hgetall(self, hash_name):
-        json_jobs = settings.redis_connection.hgetall(hash_name)
+        json_jobs = settings.redis_connection().hgetall(hash_name)
         return [json.loads(json_job[1], object_hook=decode_job) 
                 for json_job in json_jobs.items()]
     # </wrappers>
@@ -164,7 +161,7 @@ class JobManager:
         """
         Get all jobs from Redis
         """
-        return self.hgetall("modelrunner:jobs")
+        return Job.values()
 
     def get_job(self, job_uuid):
         """
@@ -173,7 +170,7 @@ class JobManager:
         Args:
             job_uuid (str):  job id
         """
-        return self.hget("modelrunner:jobs", job_uuid)
+        return Job[job_uuid]
 
     def add_update_job_table(self, job):
         """
@@ -182,7 +179,7 @@ class JobManager:
         Args:
             job (modelrunner.Job):  job instance
         """
-        self.hset("modelrunner:jobs", job.uuid, job)
+        Job[job.uuid] = job
 
     def enqueue(self, job, job_data_blob=None, job_data_url=None):
         """
@@ -221,11 +218,11 @@ class JobManager:
         # add to global job list then queue it to be run
         job.primary_url = self.primary_url
         job.primary_data_dir = self.data_dir  # to know where output.zip is
-        job.status = JobManager.STATUS_QUEUED
+        job.status = Job.STATUS_QUEUED
         self.add_update_job_table(job)
         job_queue = "modelrunner:queues:{}".format(job.model)
         logger.info("adding job {} to queue {}".format(job.uuid, job_queue))
-        settings.redis_connection.rpush(job_queue, job.uuid)
+        settings.redis_connection().rpush(job_queue, job.uuid)
 
     def wait_for_new_jobs(self, model_name):
         """
@@ -246,7 +243,7 @@ class JobManager:
         """
         job_queue = "modelrunner:queues:{}".format(model_name)
         logger.info("waiting for job on queue {}".format(job_queue))
-        result = settings.redis_connection.blpop(job_queue)
+        result = settings.redis_connection().blpop(job_queue)
         uuid = result[1]
         try:
             job = self.get_job(uuid)
@@ -287,9 +284,9 @@ class JobManager:
             failure_msg = "Failed prepping data for job {}".format(job.uuid)
             logger.error(failure_msg)
             job_data_log.write(failure_msg)
-            job.status = JobManager.STATUS_FAILED
+            job.status = Job.STATUS_FAILED
             self.add_update_job_table(job)
-            settings.redis_connection.rpush(primary_queue, job.uuid)
+            settings.redis_connection().rpush(primary_queue, job.uuid)
             job_data_log.close()
             raise
 
@@ -298,7 +295,7 @@ class JobManager:
         logger.info("starting job {}".format(job.uuid))
 
         # update job status
-        job.status = JobManager.STATUS_RUNNING
+        job.status = Job.STATUS_RUNNING
         job.on_primary = False # now on worker
         self.add_update_job_table(job)
 
@@ -337,7 +334,7 @@ class JobManager:
         if (not wk.killed) and wk.isAlive():
             # send a message to stop the wait for kill thread
             message = {'command': "BREAK", 'job_uuid': job.uuid}
-            settings.redis_connection.rpush(worker_queue, pickle.dumps(message))
+            settings.redis_connection().rpush(worker_queue, pickle.dumps(message))
 
         logger.info("finished processing job, notifying primary server {}".\
                     format(self.primary_url))
@@ -346,17 +343,17 @@ class JobManager:
         if(return_code == 0):
             logger.info("zipping output of job {}".format(job.uuid))
             self._prep_output(job)
-            job.status = JobManager.STATUS_PROCESSED
+            job.status = Job.STATUS_PROCESSED
         else:
             if wk.killed:
-                job.status = JobManager.STATUS_KILLED
+                job.status = Job.STATUS_KILLED
             else:
-                job.status = JobManager.STATUS_FAILED
+                job.status = Job.STATUS_FAILED
 
         self.add_update_job_table(job)
 
         # notify primary server job is done
-        settings.redis_connection.rpush(primary_queue, job.uuid)
+        settings.redis_connection().rpush(primary_queue, job.uuid)
 
     def wait_for_finished_jobs(self):
         """
@@ -370,7 +367,7 @@ class JobManager:
         primary_queue = "modelrunner:queues:" + self.primary_url
         logger.info("waiting for finished jobs on queue {}".\
                     format(primary_queue))
-        result = settings.redis_connection.blpop(primary_queue)
+        result = settings.redis_connection().blpop(primary_queue)
         uuid = result[1]
         job = self.get_job(uuid)
 
@@ -385,11 +382,11 @@ class JobManager:
 
             fetch_file_from_url(job.log_url(), job_data_dir)
 
-            if(job.status == JobManager.STATUS_PROCESSED):
+            if(job.status == Job.STATUS_PROCESSED):
 
                 logger.info("retrieving output for job {}".format(job.uuid))
                 fetch_file_from_url(job.download_url(), job_data_dir)
-                job.status = JobManager.STATUS_COMPLETE
+                job.status = Job.STATUS_COMPLETE
 
         job.on_primary = True
         self.add_update_job_table(job)
@@ -404,22 +401,22 @@ class JobManager:
             job (modelrunner.Job):  job instance
         """
         
-        if job.status == JobManager.STATUS_QUEUED:
+        if job.status == Job.STATUS_QUEUED:
             # case 1:  job is in QUEUED state
             #          remove it from the queue and mark as killed
             job_queue = "modelrunner:queues:{}".format(job.model)
             logger.info("killing job {} by removing from queue {}".format(job.uuid, job_queue))
-            settings.redis_connection.lrem(job_queue, job.uuid)
-            job.status = JobManager.STATUS_KILLED
+            settings.redis_connection().lrem(job_queue, 1, job.uuid)
+            job.status = Job.STATUS_KILLED
             self.add_update_job_table(job)
-        elif job.status == JobManager.STATUS_RUNNING:
+        elif job.status == Job.STATUS_RUNNING:
             # case 2:  job is in RUNNING state
             #          send message to worker to kill the job (worker will update its status)
             worker_queue = "modelrunner:queues:{}:{}".format(job.worker_url, job.model)
             logger.info("sending message to kill job on worker {}:{}".\
                         format(job.worker_url, job.model))
             message = {'command': "KILL", 'job_uuid': job.uuid}
-            settings.redis_connection.rpush(worker_queue, pickle.dumps(message))
+            settings.redis_connection().rpush(worker_queue, pickle.dumps(message))
         else:
             logger.info("kill called on job {} in incompatible state {}".\
                         format(job.uuid, job.status))
@@ -459,113 +456,3 @@ class JobManager:
         """
 
         return self._worker_is_primary
-
-
-class Job:
-    """
-    Maintain the state of a ModelRunner Job
-
-    Attributes:
-        model (str):  name of model job should run
-        name (str):  name of job
-        uuid (str):  unique uuid4 string id'ing job
-        created (datetime|str):  time created
-            if its a string, should be in iso format and will be
-            cast to datetime
-        status (str):  One of JobManager defined STATUS constants
-        primary_url (str):  The URL of the primary server for the job
-        worker_url (str):  URL of the worker server for the job
-        primary_data_dir (str):  path on primary server holding job data
-        worker_data_dir (str):  path on worker server holding job data
-        on_primary (bool): whether job is currently on primary or worker
-
-    """
-
-    def __init__(self,
-                 model=None,
-                 name=None,
-                 uuid=None,
-                 created=None,
-                 status=JobManager.STATUS_CREATED,
-                 primary_url=None,
-                 worker_url=None,
-                 primary_data_dir=None,
-                 worker_data_dir=None,
-                 on_primary=True):
-
-        self.model = model
-        self.name = name
-        self.uuid = uuid if uuid else str(uuid4())
-        # allow created to be an iso formatted string
-        # that we cast to datetime.datetime
-        if isinstance(created, basestring):
-            created = datetime.datetime.strptime(created,
-                                                 "%Y-%m-%dT%H:%M:%S.%f")
-        self.created = created if created else datetime.datetime.utcnow()
-        self.status = status
-        self.primary_url = primary_url
-        self.worker_url = worker_url
-        self.primary_data_dir = primary_data_dir
-        self.worker_data_dir = worker_data_dir
-        self.on_primary = on_primary
-
-    def get_data_dir(self):
-        """
-        Get the data directory name configured for this job
-
-        Returns:
-            the data dir for this job on worker or primary (default is "data")
-        """
-        if(not self.on_primary):
-            if(getattr(self, "worker_data_dir", False)):
-                return self.worker_data_dir
-        else:
-            if(getattr(self, "primary_data_dir", False)):
-                return self.primary_data_dir
-
-        return "data"
-
-    def get_url(self):
-        """ url based on on_primary attribute """
-        server_url = self.primary_url if self.on_primary else self.worker_url
-        return server_url
-
-    def log_url(self):
-        """
-        Get current url of the jobs log
-        NOTE:  This will change depending on whether job is on_primary
-        """
-
-        url = "{}/{}/{}/job_log.txt".format(
-            self.get_url(),
-            self.get_data_dir(),
-            self.uuid)
-
-        return url
-
-    def download_url(self):
-        url = "{}/{}/{}/output.zip".format(
-            self.get_url(),
-            self.get_data_dir(),
-            self.uuid)
-
-        return url
-
-
-class JobEncoder(json.JSONEncoder):
-    """
-    Encode Job as something that can be json serialized
-    """
-    def default(self, obj):
-        if isinstance(obj, Job):
-            return obj.__dict__
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
-
-
-def decode_job(job_dict):
-    """
-    Decode a job from a dict (useful for JSON decoding)
-    """
-    return Job(**job_dict)

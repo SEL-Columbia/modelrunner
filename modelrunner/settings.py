@@ -4,24 +4,16 @@ Module for global application settings and associated initialization functions
 
 To be called from application entry points after configuration is read
 """
-import re
-import redis
+from redis import StrictRedis
 
-redis_connection = None
+_redis_connection = None
+_redis_url="localhost:6379"
 
-def init_redis_connection(redis_url):
+def redis_connection():
     """
-    Initialize the redis connection for the entire application
+    Return the Redis connection to the url
     """
-    global redis_connection
-
-    port_re = re.compile(r'(?<=:)\d+$')
-    host_re = re.compile(r'^.*(?=:\d+$)')
-    redis_host_match = host_re.search(redis_url)
-    redis_port_match = port_re.search(redis_url)
-    if(not redis_host_match or not redis_port_match):
-        raise ValueError("invalid redis url: {}".format(redis_url))
-
-    redis_connection = redis.Redis(host=redis_host_match.group(0),
-                         port=redis_port_match.group(0))
-
+    global _redis_connection
+    if _redis_connection is None:
+        _redis_connection = StrictRedis.from_url(_redis_url)
+    return _redis_connection
