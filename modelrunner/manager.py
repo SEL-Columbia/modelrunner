@@ -16,14 +16,9 @@ import psutil
 from zipfile import ZipFile
 from modelrunner.utils import fetch_file_from_url, zipdir
 
-# initialize redisent (TODO:  Factor this out)
 from modelrunner import settings
 from modelrunner.redisent import RedisEntity
 from modelrunner import Job
-
-# initialize connection 
-RedisEntity._db = settings.redis_connection()
-RedisEntity._prefix = "modelrunner"
 
 # setup log
 logger = logging.getLogger('modelrunner')
@@ -137,25 +132,6 @@ class JobManager:
         if(not os.path.exists(data_dir)):
             os.mkdir(data_dir)
         self.data_dir = data_dir
-
-    # <wrappers> (for storing/retrieveing jobs in Redis)
-    def hset(self, hash_name, key, job):
-        json_job = json.dumps(job, cls=JobEncoder)
-        settings.redis_connection().hset(hash_name, key, json_job)
-
-    def hget(self, hash_name, key):
-        json_job = settings.redis_connection().hget(hash_name, key)
-        if not json_job:
-            raise JobNotFound("job {} not found in hash {}".\
-                              format(key, hash_name))
-
-        return json.loads(json_job, object_hook=decode_job)
-
-    def hgetall(self, hash_name):
-        json_jobs = settings.redis_connection().hgetall(hash_name)
-        return [json.loads(json_job[1], object_hook=decode_job) 
-                for json_job in json_jobs.items()]
-    # </wrappers>
 
     def get_jobs(self):
         """

@@ -7,8 +7,8 @@ Script to list job data from Redis DB
 import csv
 import sys
 from modelrunner import config
-import modelrunner as mr
-import modelrunner.settings as settings
+import modelrunner
+import modelrunner.settings
 
 from tornado.options import parse_command_line, parse_config_file
 from functools import reduce
@@ -22,18 +22,18 @@ signal(SIGPIPE, SIG_DFL)
 parse_command_line()
 parse_config_file(config.options.config_file)
 
+# initialize the global application settings
+modelrunner.settings.initialize(config.options.redis_url)
+
 # get the command_ keys
 command_dict = config.options.group_dict("model_command")
 
-# initialize the global application settings
-settings._redis_url = config.options.redis_url
-
-jm = mr.JobManager(config.options.primary_url,
-                   config.options.worker_url,
-                   config.options.data_dir,
-                   command_dict,
-                   config.options.worker_is_primary)
-
+jm = modelrunner.JobManager(config.options.primary_url,
+                            config.options.worker_url,
+                            config.options.data_dir,
+                            command_dict,
+                            config.options.worker_is_primary)
+ 
 jobs = jm.get_jobs()
 if(len(jobs) > 0):
     # order descending

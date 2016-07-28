@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-Jobs
+Job
 """
 
 import datetime
