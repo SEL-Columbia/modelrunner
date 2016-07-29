@@ -18,7 +18,7 @@ class Job(RedisEntity):
         created (datetime|str):  time created
             if its a string, should be in iso format and will be
             cast to datetime
-        status (str):  One of JobManager defined STATUS constants
+        status (str):  One of STATUS constants
         primary_url (str):  The URL of the primary server for the job
         worker_url (str):  URL of the worker server for the job
         primary_data_dir (str):  path on primary server holding job data

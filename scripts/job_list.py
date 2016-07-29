@@ -25,16 +25,7 @@ parse_config_file(config.options.config_file)
 # initialize the global application settings
 modelrunner.settings.initialize(config.options.redis_url)
 
-# get the command_ keys
-command_dict = config.options.group_dict("model_command")
-
-jm = modelrunner.JobManager(config.options.primary_url,
-                            config.options.worker_url,
-                            config.options.data_dir,
-                            command_dict,
-                            config.options.worker_is_primary)
- 
-jobs = jm.get_jobs()
+jobs = modelrunner.Job.values()
 if(len(jobs) > 0):
     # order descending
     jobs.sort(key=lambda job: job.created, reverse=True)

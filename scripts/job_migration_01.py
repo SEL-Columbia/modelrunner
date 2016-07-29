@@ -29,16 +29,8 @@ parse_config_file(config.options.config_file)
 
 # initialize the global application settings
 modelrunner.settings.initialize(config.options.redis_url)
-
-# get the command_ keys
-command_dict = config.options.group_dict("model_command")
-
-jm = modelrunner.JobManager(config.options.primary_url,
-                            config.options.worker_url,
-                            config.options.data_dir,
-                            command_dict,
-                            config.options.worker_is_primary)
  
+
 # <block> Code to map pickled classes to new namespace
 renametable = {
     'job_manager': 'modelrunner.manager',
@@ -72,4 +64,4 @@ jobs = [loads(pobj[1]) for pobj in pickled_objs.items()]
 
 # write them back as correct instance types
 for job in jobs:
-    jm.add_update_job_table(job)
+    Job[job.uuid] = job

@@ -46,16 +46,7 @@ def test_url(url):
 # initialize the global application settings
 modelrunner.settings.initialize(config.options.redis_url)
 
-# get the command_ keys
-command_dict = config.options.group_dict("model_command")
-
-jm = modelrunner.JobManager(config.options.primary_url,
-                            config.options.worker_url,
-                            config.options.data_dir,
-                            command_dict,
-                            config.options.worker_is_primary)
- 
-jobs = jm.get_jobs()
+jobs = modelrunner.Job.values()
 
 # get the log file for all jobs
 for job in jobs:
@@ -67,7 +58,7 @@ for job in jobs:
     if not log_on_primary and log_on_worker:
         logger.info("job {} log not on primary".format(job.uuid))
         # then job.on_primary should be False and we need to retrieve it
-        jm.add_update_job_table(job)
+        Job[job.uuid] = job
         # push message to primary to get data for job
         primary_queue = "modelrunner:queues:" + jm.primary_url
         settings.redis_connection.rpush(primary_queue, job.uuid)

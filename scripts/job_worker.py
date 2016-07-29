@@ -12,11 +12,11 @@ See config.py or pass --help to command for command line args
 import sys
 import logging
 import traceback
-from modelrunner import config
-from tornado.options import parse_command_line, parse_config_file
 
 import modelrunner
-import modelrunner.settings
+from modelrunner import config
+
+from tornado.options import parse_command_line, parse_config_file
 
 # setup log
 logger = logging.getLogger('modelrunner')
@@ -35,15 +35,14 @@ modelrunner.settings.initialize(config.options.redis_url)
 # get the command_ keys
 command_dict = config.options.group_dict("model_command")
 
-jm = modelrunner.JobManager(config.options.primary_url,
-                            config.options.worker_url,
-                            config.options.data_dir,
-                            command_dict,
-                            config.options.worker_is_primary)
- 
+worker_server = modelrunner.WorkerServer(config.options.primary_url,
+                                         config.options.worker_url,
+                                         config.options.data_dir,
+                                         command_dict)
+              
 # continuously wait for jobs
 while(True):
     try: 
-        jm.wait_for_new_jobs(config.options.model)
+        worker_server.wait_for_new_jobs(config.options.model)
     except:
         logger.error(traceback.format_exc())
