@@ -38,11 +38,15 @@ command_dict = config.options.group_dict("model_command")
 worker_server = modelrunner.WorkerServer(config.options.primary_url,
                                          config.options.worker_url,
                                          config.options.data_dir,
+                                         config.options.model,
                                          command_dict)
-              
+
+# start listening for messages from primary in background              
+worker_server.listen_for_commands()
+
 # continuously wait for jobs
 while(True):
     try: 
-        worker_server.wait_for_new_jobs(config.options.model)
+        worker_server.wait_for_new_jobs()
     except:
         logger.error(traceback.format_exc())

@@ -13,12 +13,14 @@ import logging
 import threading
 import subprocess
 import psutil
+import signal
 from zipfile import ZipFile
 from modelrunner.utils import fetch_file_from_url, zipdir
 
-from modelrunner import settings
+from . import settings
 from modelrunner.redisent import RedisEntity
-from modelrunner import Job
+from . import Job
+from . import Worker 
 
 # setup log
 logger = logging.getLogger('modelrunner')
@@ -170,11 +172,11 @@ class PrimaryServer:
         elif job.status == Job.STATUS_RUNNING:
             # case 2:  job is in RUNNING state
             #          send message to worker to kill the job (worker will update its status)
-            worker_queue = "modelrunner:queues:{}:{}".format(job.worker_url, job.model)
-            logger.info("sending message to kill job on worker {}:{}".\
-                        format(job.worker_url, job.model))
+            worker_channel = "modelrunner:{}:{}".format(job.worker_url, job.model)
+            logger.info("sending message to kill job on channel {}".\
+                        format(worker_channel))
             message = {'command': "KILL", 'job_uuid': job.uuid}
-            settings.redis_connection().rpush(worker_queue, pickle.dumps(message))
+            settings.redis_connection().publish(worker_channel, pickle.dumps(message))
         else:
             logger.info("kill called on job {} in incompatible state {}".\
                         format(job.uuid, job.status))
@@ -215,6 +217,102 @@ class PrimaryServer:
         Job[job.uuid] = job
 
 
+class WorkerListener(threading.Thread):
+    """
+    Thread used by WorkerServer to listen for commands from Primary
+
+    Attributes:
+        redis_client (StrictRedis):  redis client object to handle subscription
+        worker_server (WorkerServer):  WorkerServer object to receive commands for
+        this_worker_channel (str):  channel for messages specific to this worker
+        global_worker_channel (str):  channel for messages to all workers
+
+    """
+
+    def __init__(self, redis_client, worker_server, this_worker_channel, global_worker_channel):
+        threading.Thread.__init__(self)
+        self.worker_server = worker_server
+        self.pubsub = redis_client.pubsub()
+        self.this_worker_channel = this_worker_channel
+        self.global_worker_channel = global_worker_channel
+        
+
+    def run(self):
+        """
+        Wait for commands from Primary
+
+        handle case where kill message for "old" job is submitted
+        by pulling off messages until one associated with 'this' job is found
+        (otherwise, we might kill new jobs via messages for old jobs)
+
+        When job is completed, a BREAK message should be sent to
+        stop this thread.
+        """
+
+        # check for other threads
+        existing_threads = filter(lambda x: isinstance(x, WorkerListener), 
+                                  threading.enumerate())
+
+        if len(existing_threads) > 1:
+            logger.warning("More than 1 thread listening for worker {}".\
+                           format(self.worker_server.worker_url))
+
+        # wait for messages
+        channels = [self.this_worker_channel, self.global_worker_channel]
+        self.pubsub.subscribe(channels)
+        logger.info("WorkerListener listening on channels {}".\
+                    format(channels))
+
+        for raw_message in self.pubsub.listen():
+            
+            logger.info("message received {}".format(raw_message))
+
+            # assume we subscribed and throw away anything other than messages
+            if raw_message is not None and raw_message['type'] == 'message':
+                message_dict = pickle.loads(raw_message['data'])
+                self.process_message(raw_message['channel'], message_dict)
+
+
+    def process_message(self, channel, message_dict):
+        """
+        process the message_dict appropriately
+        channel:  channel message came in on
+        message_dict:  dict of command and associated attributes from primary
+        """
+        command = message_dict['command']
+        logger.info("Received command {} on channel {}".\
+                    format(command, channel))
+
+        if channel not in {self.this_worker_channel, 
+                           self.global_worker_channel}:
+            logger.warning("Message received from unsupported channel {}".\
+                           format(channel))
+            return
+
+        worker = self.worker_server.worker_info()
+
+        if(command == "KILL"):
+            # ensure the command makes sense
+            if channel == self.this_worker_channel and \
+               worker.status == Worker.STATUS_RUNNING and \
+               worker.job_uuid == message_dict['job_uuid']:
+               
+                # if subprocess spawned any children, we need to kill 
+                # them first
+                parent = psutil.Process(worker.job_pid)
+                for child in parent.children(recursive=True):
+                    logger.info("Killing child pid {}".format(child.pid))
+                    child.kill()
+                logger.info("Killing parent pid {}".format(parent.pid))
+                parent.kill()
+            else:
+                logger.warning("command {} for job_uuid {} ignored".\
+                           format(command, message_dict['job_uuid']))
+        elif command == "STATUS":
+            # update worker info in shared table
+            Worker[worker.name] = worker 
+
+
 class WorkerServer:
     """
     Class implementing the functions of the Worker component of the 
@@ -236,31 +334,60 @@ class WorkerServer:
             primary_url,
             worker_url,
             data_dir,
+            model_name,
             model_commands):
 
         self.primary_url = primary_url
         self.worker_url = worker_url
         self.model_commands = model_commands
+        self.model_name = model_name
         if(not os.path.exists(data_dir)):
             os.mkdir(data_dir)
         self.data_dir = data_dir
 
-    def wait_for_new_jobs(self, model_name):
+        # used for reporting status and managing jobs
+        self._job_pid = None
+        self._job_uuid = None
+        self._worker_status = Worker.STATUS_WAITING 
+
+    def worker_info(self):
+        """
+        Return a Worker object representing current state of WorkerServer
+        """
+
+        # uniquely identifies a worker
+        worker_name = "{}:{}".format(self.worker_url, self.model_name)
+        return Worker(worker_name, 
+                      self.model_name,
+                      self._worker_status,
+                      self._job_uuid,
+                      self._job_pid)
+
+    def listen_for_commands(self):
+        """
+        Start a background thread to wait for commands from Primary server
+        """
+        worker_channel = "modelrunner:{}:{}".format(self.worker_url, self.model_name)
+        listener = WorkerListener(settings.redis_connection(),
+                                  self, 
+                                  worker_channel,
+                                  "modelrunner:workers")
+
+        listener.start()
+ 
+    def wait_for_new_jobs(self):
         """
         Listen for jobs to run as they come in on the model based queue
 
         This is meant to be called in an infinite loop as part of a worker.
         It blocks on waiting for job and while command is being run
 
-        Args:
-            model_name (str):  name of model this worker will run
-
         TODO:  
             - handle subprocess exceptions?
             - close job_log on exceptions?
 
         """
-        job_queue = "modelrunner:queues:{}".format(model_name)
+        job_queue = "modelrunner:queues:{}".format(self.model_name)
         logger.info("waiting for job on queue {}".format(job_queue))
         result = settings.redis_connection().blpop(job_queue)
         uuid = result[1]
@@ -269,8 +396,8 @@ class WorkerServer:
         except KeyError as e:
             # Job not found is not worth re-raising
             logger.warn(e)
-            logger.warn("Jobs were removed without removing "
-                        "corresponding queue entry")
+            logger.warn("Job {} were removed without removing "
+                        "corresponding queue entry".format(uuid))
             return
 
         # assign the job to this worker
@@ -311,7 +438,7 @@ class WorkerServer:
             raise
 
         # Input has been prepped so start the job
-        command = self.model_commands[model_name]
+        command = self.model_commands[self.model_name]
         logger.info("starting job {}".format(job.uuid))
 
         # update job status
@@ -333,28 +460,32 @@ class WorkerServer:
                         stdout=job_data_log,
                         stderr=job_data_log)
 
+        # Set hidden status attributes
+        self._job_uuid = job.uuid
+        self._job_pid = popen_proc.pid
+        self._worker_status = Worker.STATUS_RUNNING
+
         logger.info("job {} running with pid {}".format(job.uuid, popen_proc.pid))
+
+        """
         worker_queue = "modelrunner:queues:{}:{}".format(self.worker_url, 
-                                                         model_name)
+                                                         self.model_name)
         wait = WaitForCommand(worker_queue, popen_proc, job.uuid)
         wait.start()
+        """
 
         # wait for command to finish or for it to be killed
         return_code = popen_proc.wait()
+
+        # Reset hidden status attributes
+        self._job_uuid = None
+        self._job_pid = None
+        self._worker_status = Worker.STATUS_WAITING
+
         # close job log
         job_data_log.close()
         logger.info("finished job {} with return code {}".format(job.uuid, 
                                                                  return_code))
-                                                                 
-        # * This handles a race condition between parent being notified of
-        # * killed sub-process and the WaitForCommand thread being cleaned up.
-        # * Without this, it's possible for extra "BREAK" command to be sent
-        # * (potentially cutting next job short)
-        if (not wait.killed) and wait.isAlive():
-            # send a message to stop the wait for kill thread
-            message = {'command': "BREAK", 'job_uuid': job.uuid}
-            settings.redis_connection().rpush(worker_queue, pickle.dumps(message))
-
         logger.info("finished processing job, notifying primary server {}".\
                     format(self.primary_url))
 
@@ -363,11 +494,10 @@ class WorkerServer:
             logger.info("zipping output of job {}".format(job.uuid))
             self._prep_output(job)
             job.status = Job.STATUS_PROCESSED
+        elif return_code == -signal.SIGKILL:
+            job.status = Job.STATUS_KILLED
         else:
-            if wait.killed:
-                job.status = Job.STATUS_KILLED
-            else:
-                job.status = Job.STATUS_FAILED
+            job.status = Job.STATUS_FAILED
 
         # save job
         Job[job.uuid] = job

@@ -21,5 +21,6 @@ logger.addHandler(ch)
 logging.getLogger('modelrunner').propagate = False
 
 from job import Job
+from worker import Worker
 from manager import WorkerServer
 from manager import PrimaryServer
