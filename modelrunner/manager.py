@@ -25,77 +25,6 @@ from . import Worker
 # setup log
 logger = logging.getLogger('modelrunner')
 
-class WaitForCommand(threading.Thread):
-    """
-    Thread used by WorkerServer to wait for commands while process is running
-
-    Attributes:
-        worker_queue (str):  name of worker queue to listen for commands
-        popen_proc (subprocess):  subprocess running job to be managed
-        job_uuid (str):  uuid of job managed by this thread
-
-    """
-
-    def __init__(self, worker_queue, popen_proc, job_uuid):
-        threading.Thread.__init__(self)
-        self.worker_queue = worker_queue
-        self.popen_proc = popen_proc
-        self.job_uuid = job_uuid
-        self.killed = False
-
-    def run(self):
-        """
-        Wait for commands associated with this job
-
-        handle case where kill message for "old" job is submitted
-        by pulling off messages until one associated with 'this' job is found
-        (otherwise, we might kill new jobs via messages for old jobs)
-
-        When job is completed, a BREAK message should be sent to
-        stop this thread.
-        """
-
-        logger.info("WaitForCommand of job {} running with pid {}".format(self.job_uuid, self.popen_proc.pid))
-
-        # check for other threads
-        existing_threads = filter(lambda x: isinstance(x, WaitForCommand), 
-                                  threading.enumerate())
-        if len(existing_threads) > 1:
-            logger.warning("More than 1 thread waiting on queue {}".\
-                           format(self.worker_queue))
-
-        while(True):
-            # block on queue and unpickle message dict when it arrives
-            raw_message = settings.redis_connection().blpop(self.worker_queue)[1]
-            message = pickle.loads(raw_message)
-            job_uuid = message['job_uuid']
-            command = message['command']
-            logger.info("Received command {} for job_uuid {} on queue {}".\
-                        format(command, job_uuid, self.worker_queue))
-
-            if(job_uuid == self.job_uuid):
-                if(command == "KILL"):
-                    # if subprocess spawned any children, we need to kill 
-                    # them first
-                    parent = psutil.Process(self.popen_proc.pid)
-                    for child in parent.children(recursive=True):
-                        logger.info("Killing child pid {}".format(child.pid))
-                        child.kill()
-                    logger.info("Killing parent pid {}".format(parent.pid))
-                    parent.kill()
-                    # TODO:  Any reason to wait on kill?
-                    self.killed = True
-
-                if(command == "BREAK"):
-                    logger.info("Stop waiting for commands for job {}".\
-                                format(self.job_uuid))
-
-                # we've handled message for 'this' job so exit loop (& thread)
-                break
-            else:
-                logger.warning("self.job_uuid {}, command {} for alternate job_uuid {} ignored".\
-                               format(self.job_uuid, command, job_uuid))
-
 class PrimaryServer:
     """
     Class implementing the functions of the Primary component of the 
@@ -529,4 +458,3 @@ class WorkerServer:
 
         output_dir = os.path.join(job_data_dir, "output")
         zipdir(output_dir, output_zip_name)
-
