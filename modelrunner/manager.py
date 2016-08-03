@@ -255,7 +255,7 @@ class WorkerListener(threading.Thread):
 
         if len(existing_threads) > 1:
             logger.warning("More than 1 thread listening for worker {}".\
-                           format(self.worker_server.worker_url))
+                           format(self.worker_server.worker.name))
 
         # wait for messages
         channels = [self.this_worker_channel, self.global_worker_channel]
@@ -289,7 +289,9 @@ class WorkerListener(threading.Thread):
                            format(channel))
             return
 
-        worker = self.worker_server.worker_info()
+        worker = self.worker_server.worker
+        logger.info("Current worker status {}".format(worker))
+
 
         if(command == "KILL"):
             # ensure the command makes sense
@@ -326,6 +328,7 @@ class WorkerServer:
         primary_url (str):  url of Primary server
         worker_url (str):  url of Worker server
         data_dir (str):  path where job data should be stored
+        model (str):  name of model to be run via this worker
         model_commands (dict str -> str):  model -> command to run model via
 
     """
@@ -334,40 +337,36 @@ class WorkerServer:
             primary_url,
             worker_url,
             data_dir,
-            model_name,
+            model,
             model_commands):
 
         self.primary_url = primary_url
-        self.worker_url = worker_url
         self.model_commands = model_commands
-        self.model_name = model_name
         if(not os.path.exists(data_dir)):
             os.mkdir(data_dir)
         self.data_dir = data_dir
 
         # used for reporting status and managing jobs
-        self._job_pid = None
-        self._job_uuid = None
-        self._worker_status = Worker.STATUS_WAITING 
-
-    def worker_info(self):
-        """
-        Return a Worker object representing current state of WorkerServer
-        """
-
         # uniquely identifies a worker
-        worker_name = "{}:{}".format(self.worker_url, self.model_name)
-        return Worker(worker_name, 
-                      self.model_name,
-                      self._worker_status,
-                      self._job_uuid,
-                      self._job_pid)
+        self._worker = Worker(worker_url,
+                              model,
+                              Worker.STATUS_WAITING,
+                              None,
+                              None)
+
+    @property
+    def worker(self):
+        """
+        We don't want others manipulating the worker directly
+        """
+        return self._worker
 
     def listen_for_commands(self):
         """
         Start a background thread to wait for commands from Primary server
         """
-        worker_channel = "modelrunner:{}:{}".format(self.worker_url, self.model_name)
+        worker_channel = "modelrunner:{}:{}".format(self.worker.worker_url, 
+                                                    self.worker.model)
         listener = WorkerListener(settings.redis_connection(),
                                   self, 
                                   worker_channel,
@@ -387,7 +386,7 @@ class WorkerServer:
             - close job_log on exceptions?
 
         """
-        job_queue = "modelrunner:queues:{}".format(self.model_name)
+        job_queue = "modelrunner:queues:{}".format(self.worker.model)
         logger.info("waiting for job on queue {}".format(job_queue))
         result = settings.redis_connection().blpop(job_queue)
         uuid = result[1]
@@ -401,7 +400,7 @@ class WorkerServer:
             return
 
         # assign the job to this worker
-        job.worker_url = self.worker_url
+        job.worker_url = self.worker.worker_url
         # keep the worker_data_dir separate from primary
         job.worker_data_dir = self.data_dir
         # primary_queue to notify primary server of any errors or completion
@@ -438,7 +437,7 @@ class WorkerServer:
             raise
 
         # Input has been prepped so start the job
-        command = self.model_commands[self.model_name]
+        command = self.model_commands[self.worker.model]
         logger.info("starting job {}".format(job.uuid))
 
         # update job status
@@ -460,27 +459,18 @@ class WorkerServer:
                         stdout=job_data_log,
                         stderr=job_data_log)
 
-        # Set hidden status attributes
-        self._job_uuid = job.uuid
-        self._job_pid = popen_proc.pid
-        self._worker_status = Worker.STATUS_RUNNING
+        # set hidden status attributes
+        self._update_worker_status(Worker.STATUS_RUNNING,
+                                   job_uuid=job.uuid,
+                                   job_pid=popen_proc.pid)
 
         logger.info("job {} running with pid {}".format(job.uuid, popen_proc.pid))
-
-        """
-        worker_queue = "modelrunner:queues:{}:{}".format(self.worker_url, 
-                                                         self.model_name)
-        wait = WaitForCommand(worker_queue, popen_proc, job.uuid)
-        wait.start()
-        """
 
         # wait for command to finish or for it to be killed
         return_code = popen_proc.wait()
 
         # Reset hidden status attributes
-        self._job_uuid = None
-        self._job_pid = None
-        self._worker_status = Worker.STATUS_WAITING
+        self._update_worker_status(Worker.STATUS_WAITING)
 
         # close job log
         job_data_log.close()
@@ -505,6 +495,12 @@ class WorkerServer:
         # notify primary server job is done
         settings.redis_connection().rpush(primary_queue, job.uuid)
 
+    def _update_worker_status(self, status, job_uuid=None, job_pid=None):
+        # set hidden worker attributes
+        self._worker.status = status
+        self._worker.job_uuid = job_uuid
+        self._worker.job_pid = job_pid
+   
     def _prep_input(self, job):
         """ fetch (if needed) and unzip data to appropriate dir """
 

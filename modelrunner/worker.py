@@ -22,14 +22,18 @@ class Worker(RedisEntity):
     STATUS_RUNNING   = "RUNNING"
 
     def __init__(self, 
-                 name=None,
+                 worker_url=None,
                  model=None,
                  status=STATUS_WAITING,
                  job_uuid=None,
                  job_pid=None):
 
-        self.name = name
+        self.name = "{}:{}".format(worker_url, model)
+        self.worker_url = worker_url
         self.model = model
         self.status = status
         self.job_uuid = job_uuid
         self.job_pid = job_pid
+
+    def __str__(self):
+        return str(self.__dict__)
