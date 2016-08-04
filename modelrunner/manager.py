@@ -58,6 +58,7 @@ def enqueue_job(redis_conn, queue_name, job):
     save and enqueue job on redis queue
     """
     Job[job.uuid] = job
+    logger.info("adding job {} to queue {}".format(job.uuid, queue_name))
     redis_conn.rpush(queue_name, job.uuid)
 
 def remove_job(redis_conn, queue_name, job):
@@ -123,7 +124,6 @@ class PrimaryServer:
         job.primary_data_dir = self.data_dir  # to know where output.zip is
         job.status = Job.STATUS_QUEUED
         job_queue = job_queue_name(job.model)
-        logger.info("adding job {} to queue {}".format(job.uuid, job_queue))
         enqueue_job(settings.redis_connection(), job_queue, job)
 
     def kill_job(self, job):

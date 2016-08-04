@@ -32,12 +32,6 @@ def cleanup(config):
     
     redis_conn = settings.redis_connection()
 
-    model_command_dict = config["command_dict"]
-    for model_name in model_command_dict:
-        queue_name = manager.job_queue_name(model_name)
-        while redis_conn.lpop(queue_name) is not None:
-            pass
-
     def delete_subdirs(d):
         for subdir in os.listdir(d):
             full_subdir = os.path.join(d, subdir)
@@ -53,18 +47,16 @@ def cleanup(config):
     for worker in Worker.values():
         del Worker[worker.name]
 
+    # clear all remaining lists
+    for list_key in redis_conn.keys():
+        while redis_conn.lpop(list_key) is not None:
+            pass
 
-def test_run_to_complete():
-
-    model_name = "test"
-    config = make_config()    
-
-    settings.initialize()
-    redis_conn = settings.redis_connection()
+def _setup_job(model_name, job_name, config, input_file):
 
     # create a job to process
     job = Job(model_name)
-    job.name = "completion_test"
+    job.name = job_name
     job.primary_url = config["primary_url"]
     job.primary_data_dir = config["primary_data_dir"]
     job.status = Job.STATUS_QUEUED
@@ -74,25 +66,41 @@ def test_run_to_complete():
     if(not os.path.exists(job_data_dir)):
         os.mkdir(job_data_dir)
 
-    # copy the 8 second sleep run
-    shutil.copy(os.path.join(config["primary_data_dir"], "input.zip"),
-                job_data_dir)
-    
+    # copy the template input_file to the job dir as the input.zip
+    shutil.copy(os.path.join(config["primary_data_dir"], input_file),
+                os.path.join(job_data_dir, "input.zip"))
+
+    return job
+
+def _enqueue_worker_job(job):
+    """
+    Submit job to queue for worker
+    """
+    settings.initialize()
+    redis_conn = settings.redis_connection()
+    queue_name = manager.job_queue_name(job.model)
+    manager.enqueue_job(redis_conn, queue_name, job)
+
+ 
+def test_run_to_complete():
+
+    model_name = "test"
+    config = make_config()    
+
     worker_server = WorkerServer(config["primary_url"], 
                                  config["worker_url"],
                                  config["worker_data_dir"],
                                  model_name,
                                  config["command_dict"])
     
-    # put job on queue before worker waits (otherwise we need multiple threads)
-    queue_name = manager.job_queue_name(model_name)
-    manager.enqueue_job(redis_conn, queue_name, job)
+    good_job = _setup_job(model_name, "processed_test", config, "good.zip")
+    _enqueue_worker_job(good_job)
 
-    # wait for jobs
+    # wait for job
     worker_server.wait_for_new_jobs()
     
     # check if job was processed 
-    job = Job[job.uuid]
-    assert job.status == Job.STATUS_PROCESSED
+    good_job = Job[good_job.uuid]
+    assert good_job.status == Job.STATUS_PROCESSED
 
     cleanup(config)
