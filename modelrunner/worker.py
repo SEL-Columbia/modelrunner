@@ -28,7 +28,7 @@ class Worker(RedisEntity):
                  job_uuid=None,
                  job_pid=None):
 
-        self.name = "{}:{}".format(worker_url, model)
+        self.name = Worker.worker_name(worker_url, model)
         self.worker_url = worker_url
         self.model = model
         self.status = status
@@ -37,3 +37,7 @@ class Worker(RedisEntity):
 
     def __str__(self):
         return str(self.__dict__)
+
+    @staticmethod
+    def worker_name(worker_url, model):
+        return "{}:{}".format(worker_url, model)

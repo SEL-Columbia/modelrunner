@@ -25,6 +25,53 @@ from . import Worker
 # setup log
 logger = logging.getLogger('modelrunner')
 
+def job_queue_name(model_name):
+    return "modelrunner:queues:{}".format(model_name)
+
+def primary_queue_name(primary_name):
+    return "modelrunner:queues:{}".format(primary_name)
+
+def worker_channel_name(worker_name):
+    return "modelrunner:channels:{}".format(worker_name)
+
+def all_workers_channel_name():
+    return "modelrunner:channels:workers"
+
+# <redis-helpers>
+def pop_job(redis_conn, queue_name):
+    """
+    *Blocking*
+    
+    Waits for job on redis queue
+    Returns job
+
+    May raise KeyError or other exceptions
+    """
+
+    result = redis_conn.blpop(queue_name)
+    uuid = result[1]
+    job = Job[uuid]
+    return job
+
+def enqueue_job(redis_conn, queue_name, job):
+    """
+    save and enqueue job on redis queue
+    """
+    Job[job.uuid] = job
+    redis_conn.rpush(queue_name, job.uuid)
+
+def remove_job(redis_conn, queue_name, job):
+    """
+    find and remove 1st matching job from queue
+    """
+    redis_conn.lrem(queue_name, 1, job.uuid)
+
+def publish_message(redis_conn, channel_name, message_dict):
+    """
+    publish a message to a channel
+    """
+    redis_conn.publish(channel_name, pickle.dumps(message_dict))
+
 class PrimaryServer:
     """
     Class implementing the functions of the Primary component of the 
@@ -75,11 +122,9 @@ class PrimaryServer:
         job.primary_url = self.primary_url
         job.primary_data_dir = self.data_dir  # to know where output.zip is
         job.status = Job.STATUS_QUEUED
-        # save it
-        Job[job.uuid] = job
-        job_queue = "modelrunner:queues:{}".format(job.model)
+        job_queue = job_queue_name(job.model)
         logger.info("adding job {} to queue {}".format(job.uuid, job_queue))
-        settings.redis_connection().rpush(job_queue, job.uuid)
+        enqueue_job(settings.redis_connection(), job_queue, job)
 
     def kill_job(self, job):
         """
@@ -92,20 +137,22 @@ class PrimaryServer:
         if job.status == Job.STATUS_QUEUED:
             # case 1:  job is in QUEUED state
             #          remove it from the queue and mark as killed
-            job_queue = "modelrunner:queues:{}".format(job.model)
+
+            job_queue = job_queue_name(job.model)
             logger.info("killing job {} by removing from queue {}".format(job.uuid, job_queue))
-            settings.redis_connection().lrem(job_queue, 1, job.uuid)
+            remove_job(settings.redis_connection(), job_queue, job)
             job.status = Job.STATUS_KILLED
             # save it
             Job[job.uuid] = job
         elif job.status == Job.STATUS_RUNNING:
             # case 2:  job is in RUNNING state
             #          send message to worker to kill the job (worker will update its status)
-            worker_channel = "modelrunner:{}:{}".format(job.worker_url, job.model)
+            worker_name = Worker.worker_name(job.worker_url, job.model)
+            worker_channel = worker_channel_name(worker_name)
             logger.info("sending message to kill job on channel {}".\
                         format(worker_channel))
             message = {'command': "KILL", 'job_uuid': job.uuid}
-            settings.redis_connection().publish(worker_channel, pickle.dumps(message))
+            publish_message(settings.redis_connection(), worker_channel, message)
         else:
             logger.info("kill called on job {} in incompatible state {}".\
                         format(job.uuid, job.status))
@@ -117,13 +164,10 @@ class PrimaryServer:
         This is meant to be called in an infinite loop in the primary server
         It blocks while waiting for finished jobs
         """
-        primary_queue = "modelrunner:queues:" + self.primary_url
+        primary_queue = primary_queue_name(self.primary_url)
         logger.info("waiting for finished jobs on queue {}".\
                     format(primary_queue))
-        result = settings.redis_connection().blpop(primary_queue)
-        uuid = result[1]
-        job = Job[uuid]
-
+        job = pop_job(settings.redis_connection(), primary_queue)
         logger.info("job {} finished with status of {}".format(job.uuid, 
                                                                job.status))
         # Get the job log from the worker
@@ -221,7 +265,6 @@ class WorkerListener(threading.Thread):
         worker = self.worker_server.worker
         logger.info("Current worker status {}".format(worker))
 
-
         if(command == "KILL"):
             # ensure the command makes sense
             if channel == self.this_worker_channel and \
@@ -294,12 +337,11 @@ class WorkerServer:
         """
         Start a background thread to wait for commands from Primary server
         """
-        worker_channel = "modelrunner:{}:{}".format(self.worker.worker_url, 
-                                                    self.worker.model)
+        worker_channel = worker_channel_name(self.worker.name)
         listener = WorkerListener(settings.redis_connection(),
                                   self, 
                                   worker_channel,
-                                  "modelrunner:workers")
+                                  all_workers_channel_name())
 
         listener.start()
  
@@ -315,26 +357,20 @@ class WorkerServer:
             - close job_log on exceptions?
 
         """
-        job_queue = "modelrunner:queues:{}".format(self.worker.model)
+        job_queue = job_queue_name(self.worker.model)
         logger.info("waiting for job on queue {}".format(job_queue))
-        result = settings.redis_connection().blpop(job_queue)
-        uuid = result[1]
         try:
-            job = Job[uuid]
+            job = pop_job(settings.redis_connection(), job_queue)
         except KeyError as e:
             # Job not found is not worth re-raising
             logger.warn(e)
-            logger.warn("Job {} were removed without removing "
-                        "corresponding queue entry".format(uuid))
+            logger.warn("Job {} missing".format(uuid))
             return
 
         # assign the job to this worker
         job.worker_url = self.worker.worker_url
         # keep the worker_data_dir separate from primary
         job.worker_data_dir = self.data_dir
-        # primary_queue to notify primary server of any errors or completion
-        primary_queue = "modelrunner:queues:{}".format(self.primary_url)
-
         job_data_dir = os.path.join(self.data_dir, job.uuid)
         input_dir = os.path.join(job_data_dir, "input")
         output_dir = os.path.join(job_data_dir, "output")
@@ -350,6 +386,9 @@ class WorkerServer:
         logger.info("preparing input for job {}".format(job.uuid))
         job_data_log = open(os.path.join(job_data_dir, "job_log.txt"), 'w')
 
+        # primary_queue to notify primary server of any errors or completion
+        primary_queue = primary_queue_name(self.primary_url)
+
         # catch data prep exceptions so that we mark the job as failed
         try:
             self._prep_input(job)
@@ -360,9 +399,7 @@ class WorkerServer:
             job_data_log.write(failure_msg)
             job_data_log.close()
             job.status = Job.STATUS_FAILED
-            # save job 
-            Job[job.uuid] = job
-            settings.redis_connection().rpush(primary_queue, job.uuid)
+            enqueue_job(settings.redis_connection(), primary_queue, job)
             raise
 
         # Input has been prepped so start the job
@@ -418,11 +455,8 @@ class WorkerServer:
         else:
             job.status = Job.STATUS_FAILED
 
-        # save job
-        Job[job.uuid] = job
-
         # notify primary server job is done
-        settings.redis_connection().rpush(primary_queue, job.uuid)
+        enqueue_job(settings.redis_connection(), primary_queue, job)
 
     def _update_worker_status(self, status, job_uuid=None, job_pid=None):
         # set hidden worker attributes

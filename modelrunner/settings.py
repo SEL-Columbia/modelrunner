@@ -10,14 +10,19 @@ Note:  This initializes the redisent sub-package as well
 from redis import StrictRedis
 import redisent.settings
 
+_redis_connection = None
+
 def redis_connection(redis_url="redis://@localhost:6379"):
     """
     Return the Redis connection to the url
     
-    This uses a pooled connection
+    This returns a pooled connection (see http://bit.ly/2axtR2k)
     """
+    global _redis_connection
+    if _redis_connection is None:
+        _redis_connection = StrictRedis.from_url(redis_url)
 
-    return StrictRedis.from_url(redis_url)
+    return _redis_connection
 
 def initialize(redis_url="redis://@localhost:6379"):
     """
