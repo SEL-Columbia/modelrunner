@@ -202,12 +202,17 @@ class WorkerListener(threading.Thread):
 
     """
 
+    COMMAND_KILL   = "KILL"   # Kill a job
+    COMMAND_STATUS = "STATUS" # Update worker status
+    COMMAND_STOP   = "STOP"   # Stop the listener thread
+
     def __init__(self, redis_client, worker_server, this_worker_channel, global_worker_channel):
         threading.Thread.__init__(self)
         self.worker_server = worker_server
         self.pubsub = redis_client.pubsub()
         self.this_worker_channel = this_worker_channel
         self.global_worker_channel = global_worker_channel
+        self._keep_listening = True
         
 
     def run(self):
@@ -245,12 +250,18 @@ class WorkerListener(threading.Thread):
                 message_dict = pickle.loads(raw_message['data'])
                 self.process_message(raw_message['channel'], message_dict)
 
+            # check if processing message indicates that we should break
+            # and exit the thread
+            if not self._keep_listening:
+                break
 
     def process_message(self, channel, message_dict):
         """
         process the message_dict appropriately
         channel:  channel message came in on
         message_dict:  dict of command and associated attributes from primary
+
+        return True if we should keep listening, else return False
         """
         command = message_dict['command']
         logger.info("Received command {} on channel {}".\
@@ -285,6 +296,9 @@ class WorkerListener(threading.Thread):
         elif command == "STATUS":
             # update worker info in shared table
             Worker[worker.name] = worker 
+        elif command == "STOP":
+            self._keep_listening = False
+
 
 
 class WorkerServer:
@@ -320,7 +334,8 @@ class WorkerServer:
 
         # used for reporting status and managing jobs
         # uniquely identifies a worker
-        self._worker = Worker(worker_url,
+        self._worker = Worker(Worker.worker_name(worker_url, model),
+                              worker_url,
                               model,
                               Worker.STATUS_WAITING,
                               None,
@@ -344,6 +359,7 @@ class WorkerServer:
                                   all_workers_channel_name())
 
         listener.start()
+        return listener
  
     def wait_for_new_jobs(self):
         """
