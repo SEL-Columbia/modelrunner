@@ -38,11 +38,14 @@ def cleanup(config):
         while redis_conn.lpop(queue_name) is not None:
             pass
 
-    for d in os.listdir(config["primary_data_dir"]):
-        shutil.rmtree(d, ignore_errors=True)
+    def delete_subdirs(d):
+        for subdir in os.listdir(d):
+            full_subdir = os.path.join(d, subdir)
+            if os.path.isdir(full_subdir):
+                shutil.rmtree(full_subdir, ignore_errors=True)
 
-    for d in os.listdir(config["worker_data_dir"]):
-        shutil.rmtree(d, ignore_errors=True)
+    delete_subdirs(config["primary_data_dir"])
+    delete_subdirs(config["worker_data_dir"])
 
     for job in Job.values():
         del Job[job.uuid]
