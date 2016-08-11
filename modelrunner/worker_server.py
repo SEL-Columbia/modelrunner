@@ -19,12 +19,12 @@ logger = logging.getLogger('modelrunner')
 
 class WorkerServer:
     """
-    Class implementing the functions of the Worker component of the 
+    Class implementing the functions of the Worker component of the
     Primary-Worker system
 
     Implements 'CommandHandler interface' required by JobNode
 
-    Retrieves jobs from queue, runs them and makes results available to 
+    Retrieves jobs from queue, runs them and makes results available to
     Primary via it's queue
 
     Attributes:
@@ -139,7 +139,7 @@ class WorkerServer:
 
         # close job log
         job_data_log.close()
-        logger.info("finished job {} with return code {}".format(job.uuid, 
+        logger.info("finished job {} with return code {}".format(job.uuid,
                                                                  return_code))
 
         # update job status (use command return code for now)
@@ -191,7 +191,7 @@ class WorkerServer:
         self._node.status = status
         self._job_uuid = job_uuid
         self._job_pid = job_pid
-        
+
     def _setup_job_dir(self, job):
         """
         setup parent job dir, and input/output subdirs

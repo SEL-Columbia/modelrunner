@@ -72,7 +72,15 @@ def kill_process_tree(pid):
     parent = psutil.Process(pid)
     for child in parent.children(recursive=True):
         logger.info("Killing child pid {}".format(child.pid))
-        child.kill()
+        try:
+            child.kill()
+        except Exception as e:
+            # if killing child fails, log it
+            logger.warning(
+                "exception occurred while killing pid {}: {}".\
+                format(child.pid, e))
+
+    # if killing parent fails, exception will be raised
     logger.info("Killing parent pid {}".format(parent.pid))
     parent.kill()
 
@@ -105,7 +113,7 @@ def json_loads_datetime(dump):
                 except ValueError:
                     d[k] = v
             else:
-                d[k] = v             
+                d[k] = v
         return d
-    
+
     return json.loads(dump, object_pairs_hook=load_with_datetime)
