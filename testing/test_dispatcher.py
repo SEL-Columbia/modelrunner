@@ -5,6 +5,7 @@ from modelrunner.settings import redis_connection
 from modelrunner.redis_utils import enqueue_command, publish_command
 from modelrunner.dispatcher import Dispatcher
 
+
 class PrimaryCommandHandler:
     """
     Implement 'CommandHandler interface' for testing Dispatcher
@@ -107,7 +108,7 @@ def test_primary_worker_scenario():
         sleep_time += 1
 
     assert len(primary_handler.jobs) == 1 and\
-           primary_handler.jobs[0]['status'] == 'COMPLETE'
+        primary_handler.jobs[0]['status'] == 'COMPLETE'
 
     stop_queue_command = {'command': 'STOP_PROCESSING_QUEUE'}
     stop_channel_command = {'command': 'STOP_PROCESSING_CHANNELS'}

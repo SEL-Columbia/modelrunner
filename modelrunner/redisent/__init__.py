@@ -8,4 +8,4 @@ If more functionality is needed, see
 [rom](http://pythonhosted.org/rom/)
 """
 
-from entity import RedisEntity
+from entity import RedisEntity  # noqa

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import datetime
 from redisent import RedisEntity
+
 
 class Node(RedisEntity):
     """
@@ -18,10 +18,10 @@ class Node(RedisEntity):
     """
 
     TYPE_PRIMARY = "PRIMARY"
-    TYPE_WORKER  = "WORKER"
+    TYPE_WORKER = "WORKER"
 
-    STATUS_WAITING   = "WAITING"
-    STATUS_RUNNING   = "RUNNING"
+    STATUS_WAITING = "WAITING"
+    STATUS_RUNNING = "RUNNING"
 
     def __init__(self,
                  name=None,

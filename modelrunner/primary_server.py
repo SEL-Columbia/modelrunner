@@ -12,13 +12,13 @@ from modelrunner.redis_utils import enqueue_command,\
 from modelrunner.settings import redis_connection,\
                                  job_queue_name,\
                                  worker_name,\
-                                 primary_queue_name,\
                                  node_channel_name
 
 from . import Job
 from . import Node
 
 logger = logging.getLogger('modelrunner')
+
 
 class PrimaryServer:
     """
@@ -54,7 +54,6 @@ class PrimaryServer:
         """
         return self._node
 
-
     def enqueue(self, job, job_data_blob=None, job_data_url=None):
         """
         Write job data to file and queue up for processing
@@ -77,13 +76,13 @@ class PrimaryServer:
 
         job_data_file = os.path.join(job_data_dir, "input.zip")
         if(job_data_blob):
-            logger.info("writing input file for job to {}".\
+            logger.info("writing input file for job to {}".
                         format(job_data_file))
             file_handle = open(job_data_file, 'wb')
             file_handle.write(job_data_blob)
             file_handle.close()
         else:
-            logger.info("retrieving input file for job and writing to {}".\
+            logger.info("retrieving input file for job and writing to {}".
                         format(job_data_file))
             fetch_file_from_url(job_data_url, job_data_dir, "input.zip")
 
@@ -109,7 +108,8 @@ class PrimaryServer:
             #          remove it from the queue and mark as killed
 
             job_queue = job_queue_name(job.model)
-            logger.info("killing job {} by removing from queue {}".format(job.uuid, job_queue))
+            logger.info("killing job {} by removing from queue {}".
+                format(job.uuid, job_queue))
             command_dict = {'command': 'PROCESS_JOB', 'job_uuid': job.uuid}
             remove_command(redis_connection(), job_queue, command_dict)
             job.status = Job.STATUS_KILLED
@@ -117,15 +117,15 @@ class PrimaryServer:
             Job[job.uuid] = job
         elif job.status == Job.STATUS_RUNNING:
             # case 2:  job is in RUNNING state
-            #          send message to worker to kill the job (worker will update its status)
+            #          send message to worker to kill the job
             worker = worker_name(job.worker_url, job.model)
             worker_channel = node_channel_name(worker)
-            logger.info("sending command to kill job on channel {}".\
+            logger.info("sending command to kill job on channel {}".
                         format(worker_channel))
             command_dict = {'command': "KILL_JOB", 'job_uuid': job.uuid}
             publish_command(redis_connection(), worker_channel, command_dict)
         else:
-            logger.info("kill called on job {} in incompatible state {}".\
+            logger.info("kill called on job {} in incompatible state {}".
                         format(job.uuid, job.status))
 
     def complete_job(self, command_dict):

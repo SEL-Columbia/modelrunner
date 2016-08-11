@@ -5,11 +5,11 @@ Main modelrunner package
 
 # initialize logging
 import logging
-from job import Job
-from node import Node
-from dispatcher import Dispatcher
-from worker_server import WorkerServer
-from primary_server import PrimaryServer
+from job import Job  # noqa
+from node import Node  # noqa
+from dispatcher import Dispatcher  # noqa
+from worker_server import WorkerServer  # noqa
+from primary_server import PrimaryServer  # noqa
 
 __version__ = "0.4.7"
 

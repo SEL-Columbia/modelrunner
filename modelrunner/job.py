@@ -7,6 +7,7 @@ import datetime
 from uuid import uuid4
 from redisent import RedisEntity
 
+
 class Job(RedisEntity):
     """
     Maintain the state of a ModelRunner Job
@@ -27,14 +28,13 @@ class Job(RedisEntity):
 
     """
 
-    STATUS_CREATED   = "CREATED"
-    STATUS_QUEUED    = "QUEUED"
-    STATUS_RUNNING   = "RUNNING"
+    STATUS_CREATED = "CREATED"
+    STATUS_QUEUED = "QUEUED"
+    STATUS_RUNNING = "RUNNING"
     STATUS_PROCESSED = "PROCESSED"
-    STATUS_COMPLETE  = "COMPLETE"
-    STATUS_FAILED    = "FAILED"
-    STATUS_KILLED    = "KILLED"
-
+    STATUS_COMPLETE = "COMPLETE"
+    STATUS_FAILED = "FAILED"
+    STATUS_KILLED = "KILLED"
 
     def __init__(self,
                  model=None,

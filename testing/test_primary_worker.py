@@ -26,7 +26,8 @@ from modelrunner import PrimaryServer, WorkerServer, Job, Node, Dispatcher
 # initialize
 initialize()
 
-#<helpers>
+
+# <helpers>
 def make_config(model_name):
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -43,6 +44,7 @@ def make_config(model_name):
              }
 
     return config
+
 
 def cleanup(config):
 
@@ -68,6 +70,7 @@ def cleanup(config):
         while redis_conn.lpop(list_key) is not None:
             pass
 
+
 def setup_queued_job(config, job_name, input_file):
 
     # create a job to process
@@ -90,6 +93,7 @@ def setup_queued_job(config, job_name, input_file):
                 os.path.join(job_data_dir, "input.zip"))
 
     return job
+
 
 def setup_processed_job(config, job_name):
 
@@ -180,6 +184,7 @@ def publish(channel_name, command_dict, wait_time=0):
 
     publish_command(redis_conn, channel_name, command_dict)
 
+
 def make_publish_function(channel_name, command_dict, wait_time=0):
     """
     return a function that will publish a command_dict
@@ -191,9 +196,10 @@ def make_publish_function(channel_name, command_dict, wait_time=0):
 
     return publish_fun
 
-#</helpers>
+# </helpers>
 
-#<tests>
+
+# <tests>
 def test_run_good_bad():
 
     model_name = "test"
@@ -243,7 +249,11 @@ def test_run_commands():
 
     # start thread to publish a kill message in 2 seconds
     kill_command = {"command": "KILL_JOB", "job_uuid": killed_job.uuid}
-    publish_kill_fun = make_publish_function(worker_channel, kill_command, wait_time=2)
+    publish_kill_fun = make_publish_function(
+                        worker_channel,
+                        kill_command,
+                        wait_time=2)
+
     Thread(target=publish_kill_fun).start()
 
     tq = Thread(target=worker.wait_for_queue_commands)
@@ -265,7 +275,7 @@ def test_run_commands():
 
     node = Node[name]
     assert node.status == Node.STATUS_WAITING and \
-           node.model == model_name
+        node.model == model_name
 
     # stop both queue and channel threads
     stop_queue_command = {'command': 'STOP_PROCESSING_QUEUE'}
@@ -277,14 +287,13 @@ def test_run_commands():
 
     cleanup(config)
 
+
 def test_primary_enqueue_kill():
     """ test enqueue, kill """
     model_name = "test"
     config = make_config(model_name)
 
     primary = get_primary(config)
-    name = config["primary_url"]
-    primary_channel = node_channel_name(name)
 
     # create a job to process
     job = Job(model_name)
@@ -319,6 +328,7 @@ def test_primary_enqueue_kill():
     assert len(commands) == 0
 
     cleanup(config)
+
 
 def test_primary_complete():
     """ test compete job """

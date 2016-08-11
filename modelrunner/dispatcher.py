@@ -70,11 +70,10 @@ class Dispatcher:
         """
         pubsub = self.redis_conn.pubsub()
         pubsub.subscribe(self.channel_names)
-        logger.info("waiting for commands on channels {}".\
+        logger.info("waiting for commands on channels {}".
                     format(self.channel_names))
 
         for command_dict in pubsub_listen(pubsub):
-            command = command_dict['command']
             self.process_command(command_dict)
             if not self._keep_processing_channels:
                 break
@@ -95,7 +94,11 @@ class Dispatcher:
         logger.info("waiting for commands on queue {}".format(self.queue_name))
         while(self._keep_processing_queue):
             # timeout so that we can stop listening via _keep_processing_queue
-            command_dict = pop_command(self.redis_conn, self.queue_name, timeout=1)
+            command_dict = pop_command(
+                            self.redis_conn,
+                            self.queue_name,
+                            timeout=1)
+
             if command_dict is not None:
                 self.process_command(command_dict)
 

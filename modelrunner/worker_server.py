@@ -17,6 +17,7 @@ from . import Node
 
 logger = logging.getLogger('modelrunner')
 
+
 class WorkerServer:
     """
     Class implementing the functions of the Worker component of the
@@ -118,7 +119,7 @@ class WorkerServer:
 
         # update job status
         job.status = Job.STATUS_RUNNING
-        job.on_primary = False # now on worker
+        job.on_primary = False  # now on worker
         Job[job.uuid] = job
 
         # add the input and output dir to the command
@@ -129,7 +130,8 @@ class WorkerServer:
                                    job_uuid=job.uuid,
                                    job_pid=popen_proc.pid)
 
-        logger.info("job {} running with pid {}".format(job.uuid, popen_proc.pid))
+        logger.info("job {} running with pid {}".
+            format(job.uuid, popen_proc.pid))
 
         # wait for command to finish or for it to be killed
         return_code = popen_proc.wait()
@@ -172,7 +174,7 @@ class WorkerServer:
                 kill_process_tree(self._job_pid)
             except Exception as e:
                 logger.warning(
-                    "exception occurred while killing pid {}: {}".\
+                    "exception occurred while killing pid {}: {}".
                     format(self._job_pid, e))
         else:
             logger.warning("command {} ignored".format(command_dict))
@@ -216,9 +218,10 @@ class WorkerServer:
         input_zip = os.path.join(job_data_dir, "input.zip")
 
         # get the input
-        input_url = job.primary_url + "/" +\
-                    job.primary_data_dir + "/" +\
-                    job.uuid + "/input.zip"
+        input_url = "{}/{}/{}/input.zip".format(
+                        job.primary_url,
+                        job.primary_data_dir,
+                        job.uuid)
 
         logger.info("fetching data from {}".format(input_url))
         fetch_file_from_url(input_url, job_data_dir)

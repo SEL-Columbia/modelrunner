@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import redis
 import json
 import datetime
 import re
+
 
 class RedisEntityMeta(type):
     """
@@ -20,7 +20,8 @@ class RedisEntityMeta(type):
     def __getitem__(cls, key):
         json_entity = cls._db.hget(cls.hash_name(), key)
         if json_entity is None:
-            raise KeyError("Key {} does not exist in {}".format(key, cls.hash_name()))
+            raise KeyError("Key {} does not exist in {}".
+                format(key, cls.hash_name()))
         else:
             return json.loads(json_entity, object_hook=cls.json_decode)
 
@@ -50,7 +51,7 @@ class RedisEntityMeta(type):
         entity_snake_case = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
         # poor man's pluralize
         if not re.search(r's$', entity_snake_case):
-           entity_snake_case = "{}s".format(entity_snake_case)
+            entity_snake_case = "{}s".format(entity_snake_case)
 
         if cls._prefix:
             return "{}:{}".format(cls._prefix, entity_snake_case)
@@ -72,7 +73,6 @@ class RedisEntityMeta(type):
                 Encode Entity as something that can be json serialized
                 """
                 def default(self, obj):
-                    # NOTE:  we reference the cls in the outer @classmethod here
                     if isinstance(obj, cls):
                         return obj.__dict__
                     if isinstance(obj, datetime.datetime):

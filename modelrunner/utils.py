@@ -12,6 +12,7 @@ from zipfile import ZipFile
 # setup log
 logger = logging.getLogger('modelrunner')
 
+
 def fetch_file_from_url(url, destination_dir, file_name=None):
     """
     Utility function for retrieving a remote file from a url
@@ -77,7 +78,7 @@ def kill_process_tree(pid):
         except Exception as e:
             # if killing child fails, log it
             logger.warning(
-                "exception occurred while killing pid {}: {}".\
+                "exception occurred while killing pid {}: {}".
                 format(child.pid, e))
 
     # if killing parent fails, exception will be raised
@@ -85,7 +86,7 @@ def kill_process_tree(pid):
     parent.kill()
 
 
-#<json helpers>
+# <json helpers>
 # mainly from:  http://stackoverflow.com/a/14996040
 def json_dumps_datetime(obj):
     """
@@ -98,6 +99,7 @@ def json_dumps_datetime(obj):
             return d
 
     return json.dumps(obj, default=obj_hook)
+
 
 def json_loads_datetime(dump):
     """

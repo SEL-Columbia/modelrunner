@@ -2,6 +2,7 @@
 Test whether metaclass-based implementation of magic methods works
 """
 
+
 class MetaEntity(type):
 
     def __getitem__(cls, k):
@@ -14,6 +15,7 @@ class MetaEntity(type):
 class Entity:
     __metaclass__ = MetaEntity
     data = {}
+
 
 class User(Entity):
 

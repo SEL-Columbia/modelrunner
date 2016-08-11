@@ -11,6 +11,7 @@ from utils import json_dumps_datetime, json_loads_datetime
 # setup log
 logger = logging.getLogger('modelrunner')
 
+
 def pop_command(redis_conn, queue_name, timeout=0):
     """
     *Blocking*
@@ -28,12 +29,15 @@ def pop_command(redis_conn, queue_name, timeout=0):
     command_dict = json_loads_datetime(result[1])
     return command_dict
 
+
 def enqueue_command(redis_conn, queue_name, command_dict):
     """
     enqueue command on redis queue
     """
-    logger.info("adding command {} to queue {}".format(command_dict, queue_name))
+    logger.info("adding command {} to queue {}".
+        format(command_dict, queue_name))
     redis_conn.rpush(queue_name, json_dumps_datetime(command_dict))
+
 
 def remove_command(redis_conn, queue_name, command_dict):
     """
@@ -45,11 +49,13 @@ def remove_command(redis_conn, queue_name, command_dict):
     for match in matches:
         redis_conn.lrem(queue_name, 1, json_dumps_datetime(match))
 
+
 def publish_command(redis_conn, channel_name, command_dict):
     """
     publish a message to a channel
     """
     redis_conn.publish(channel_name, json_dumps_datetime(command_dict))
+
 
 def get_all_commands(redis_conn, queue_name):
     """
@@ -57,6 +63,7 @@ def get_all_commands(redis_conn, queue_name):
     """
     result = redis_conn.lrange(queue_name, 0, -1)
     return [json_loads_datetime(item) for item in result]
+
 
 def pubsub_listen(pubsub):
     """
@@ -72,4 +79,3 @@ def pubsub_listen(pubsub):
         if raw_message is not None and raw_message['type'] == 'message':
             message_dict = json_loads_datetime(raw_message['data'])
             yield message_dict
-
