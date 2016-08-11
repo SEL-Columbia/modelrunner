@@ -15,6 +15,8 @@ with open('modelrunner/__init__.py') as f:
 setup(
     name="modelrunner",
     version=version,
+    author="Chris Natali",
+    author_email="chris.natali@gmail.com",
     packages=find_packages(),
     description="System for managing long model runs",
     long_description=open("README.md").read(),
