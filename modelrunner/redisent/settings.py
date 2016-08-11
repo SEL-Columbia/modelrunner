@@ -12,7 +12,7 @@ def initialize(redis_connection=None, prefix=None):
     """
     assert isinstance(redis_connection, StrictRedis),\
             "redis_connection must be instance of StrictRedis"
-    #TODO:  Consider allowing _db to be a function so that it 
+    #TODO:  Consider allowing _db to be a function so that it
     #       can reference a pool
     RedisEntity._db = redis_connection
     RedisEntity._prefix = prefix

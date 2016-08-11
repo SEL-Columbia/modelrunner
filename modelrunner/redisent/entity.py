@@ -7,7 +7,7 @@ import re
 class RedisEntityMeta(type):
     """
     Meta class for RedisEntity
-    
+
     Meta class was needed to implement class level 'magic' methods
     """
     def __setitem__(cls, key, entity):
@@ -32,15 +32,15 @@ class RedisEntityMeta(type):
 
     def items(cls):
         items = cls._db.hgetall(cls.hash_name()).items()
-        items = [(key, json.loads(entity, object_hook=cls.json_decode)) 
+        items = [(key, json.loads(entity, object_hook=cls.json_decode))
                  for key, entity in items]
         return items
 
     def values(cls):
         values = cls._db.hgetall(cls.hash_name()).values()
-        values = [json.loads(entity, object_hook=cls.json_decode) 
+        values = [json.loads(entity, object_hook=cls.json_decode)
                   for entity in values]
-        return values 
+        return values
 
     def hash_name(cls):
         if cls._custom_hash_name is not None:
@@ -51,7 +51,7 @@ class RedisEntityMeta(type):
         # poor man's pluralize
         if not re.search(r's$', entity_snake_case):
            entity_snake_case = "{}s".format(entity_snake_case)
-            
+
         if cls._prefix:
             return "{}:{}".format(cls._prefix, entity_snake_case)
         else:
@@ -78,7 +78,7 @@ class RedisEntityMeta(type):
                     if isinstance(obj, datetime.datetime):
                         return obj.isoformat()
                     return json.JSONEncoder.default(self, obj)
-            
+
             cls._json_encoder = RedisEntityEncoder
             return RedisEntityEncoder
 

@@ -22,7 +22,7 @@ logger = logging.getLogger('modelrunner')
 
 class PrimaryServer:
     """
-    Class implementing the functions of the Primary component of the 
+    Class implementing the functions of the Primary component of the
     Primary-Worker system
 
     Implements 'CommandHandler interface' required by TaskNode
@@ -103,7 +103,7 @@ class PrimaryServer:
         Args:
             job (modelrunner.Job):  job instance
         """
-        
+
         if job.status == Job.STATUS_QUEUED:
             # case 1:  job is in QUEUED state
             #          remove it from the queue and mark as killed
@@ -145,7 +145,7 @@ class PrimaryServer:
             logger.warn("Job {} missing".format(job_uuid))
             return
 
-        logger.info("job {} finished with status of {}".format(job.uuid, 
+        logger.info("job {} finished with status of {}".format(job.uuid,
                                                                job.status))
         # Get the job log from the worker
         logger.info("retrieving log for job {}".format(job.uuid))

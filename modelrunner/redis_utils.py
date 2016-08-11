@@ -5,7 +5,7 @@ functions associated with implementing modelrunner 'protocol' via Redis
 command dicts are serialized as json
 """
 
-import logging 
+import logging
 from utils import json_dumps_datetime, json_loads_datetime
 
 # setup log
@@ -14,7 +14,7 @@ logger = logging.getLogger('modelrunner')
 def pop_command(redis_conn, queue_name, timeout=0):
     """
     *Blocking*
-    
+
     Waits for command on redis queue
     timeout:  if 0, wait forever for item on queue, else seconds to timeout
     Returns command dict or None if timeout
@@ -40,7 +40,7 @@ def remove_command(redis_conn, queue_name, command_dict):
     find and remove all matching commands from queue
     """
     result = redis_conn.lrange(queue_name, 0, -1)
-    matches = filter(lambda d: d == command_dict, 
+    matches = filter(lambda d: d == command_dict,
                      [json_loads_datetime(item) for item in result])
     for match in matches:
         redis_conn.lrem(queue_name, 1, json_dumps_datetime(match))
@@ -57,7 +57,7 @@ def get_all_commands(redis_conn, queue_name):
     """
     result = redis_conn.lrange(queue_name, 0, -1)
     return [json_loads_datetime(item) for item in result]
- 
+
 def pubsub_listen(pubsub):
     """
     generator that returns command_dict on subscribed pubsub object
@@ -72,4 +72,4 @@ def pubsub_listen(pubsub):
         if raw_message is not None and raw_message['type'] == 'message':
             message_dict = json_loads_datetime(raw_message['data'])
             yield message_dict
- 
+

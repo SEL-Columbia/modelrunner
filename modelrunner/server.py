@@ -195,7 +195,7 @@ class AdminHandler(tornado.web.RequestHandler):
 
         Args:
             primary_server (modelrunner.PrimaryServer):  PrimaryServer instance
-            request_admin_key (str):  Key required to access this section 
+            request_admin_key (str):  Key required to access this section
         """
 
         self.primary_server = primary_server

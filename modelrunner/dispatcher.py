@@ -78,19 +78,19 @@ class Dispatcher:
             self.process_command(command_dict)
             if not self._keep_processing_channels:
                 break
- 
+
     def wait_for_queue_commands(self):
         """
-        Wait for commands on queue 
- 
-        loops until a 'STOP_PROCESSING_QUEUE' command is received 
+        Wait for commands on queue
+
+        loops until a 'STOP_PROCESSING_QUEUE' command is received
         (which sets self._keep_processing_queue = False)
 
-        Will block and process the queue forever, so it should either be 
+        Will block and process the queue forever, so it should either be
         the last statement in a program OR run in a thread, e.g.:
 
         >>> Thread(target=my_job_node.wait_for_queue_commands).start()
-        
+
         """
         logger.info("waiting for commands on queue {}".format(self.queue_name))
         while(self._keep_processing_queue):
@@ -111,7 +111,7 @@ class Dispatcher:
         # now the default
         if command in self.dispatch:
             self.dispatch[command](command_dict)
- 
+
     def stop_processing_queue(self, command_dict):
         """
         command format {'command': 'STOP_PROCESSING_QUEUE'}
