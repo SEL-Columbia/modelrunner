@@ -4,6 +4,9 @@ import logging
 import urllib2
 import zipfile
 import shutil
+import psutil
+from datetime import datetime
+import json
 from zipfile import ZipFile
 
 # setup log
@@ -60,3 +63,49 @@ def zipdir(path, zip_file_name):
                 compress_type=zipfile.ZIP_DEFLATED)
 
     output_zip.close()
+
+
+def kill_process_tree(pid):
+    """
+    Kill the process id'd by pid and all of its children
+    """
+    parent = psutil.Process(pid)
+    for child in parent.children(recursive=True):
+        logger.info("Killing child pid {}".format(child.pid))
+        child.kill()
+    logger.info("Killing parent pid {}".format(parent.pid))
+    parent.kill()
+
+
+#<json helpers>
+# mainly from:  http://stackoverflow.com/a/14996040
+def json_dumps_datetime(obj):
+    """
+    json.dumps where datetime type is dumped as isoformat string
+    """
+    def obj_hook(d):
+        if hasattr(d, 'isoformat'):
+            return d.isoformat()
+        else:
+            return d
+
+    return json.dumps(obj, default=obj_hook)
+
+def json_loads_datetime(dump):
+    """
+    json.loads where isoformat string is loaded as datetime
+    """
+    def load_with_datetime(pairs, format='%Y-%m-%dT%H:%M:%S.%f'):
+        """Load with datetimes"""
+        d = {}
+        for k, v in pairs:
+            if isinstance(v, basestring):
+                try:
+                    d[k] = datetime.strptime(v, format)
+                except ValueError:
+                    d[k] = v
+            else:
+                d[k] = v             
+        return d
+    
+    return json.loads(dump, object_pairs_hook=load_with_datetime)

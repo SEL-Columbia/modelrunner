@@ -12,6 +12,7 @@ import sys
 import logging
 
 import modelrunner
+from modelrunner.settings import initialize
 from modelrunner import config
 from modelrunner import server
 from tornado.options import parse_command_line, parse_config_file
@@ -35,7 +36,7 @@ parse_command_line()
 parse_config_file(config.options.config_file)
 
 # initialize the global application settings
-modelrunner.settings.initialize(config.options.redis_url)
+initialize(config.options.redis_url)
 
 # get the command keys
 command_dict = config.options.group_dict("model_command")

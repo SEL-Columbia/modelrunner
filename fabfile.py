@@ -34,7 +34,9 @@ def run_conda_enabled(command):
     }
     run("PATH={conda_path}:$PATH && {command}".format(**d), pty=False)
 
+
 setup_called = False
+
 
 def setup_env(**args):
     global setup_called
@@ -62,6 +64,7 @@ def stop(**args):
     print("stopping modelrunner processes")
     with cd(env.project_directory):
         run("./scripts/stop_processes.sh", pty=False)
+
 
 @task
 def setup(**args):
@@ -93,7 +96,7 @@ def setup_model(model, **args):
     Install or update the deployment of a model on a machine
     (should NOT wipeout any data)
     Assumes machine has been setup with mr user under /home/mr
-    
+  
     model:  model to setup or update
     """
     setup_env(**args)
@@ -128,6 +131,7 @@ def update_modelrunner(**args):
     # deploy appropriate config file
     put(env.config_file, './modelrunner/config.ini')
 
+
 @task
 def start_primary(**args):
     """
@@ -137,13 +141,14 @@ def start_primary(**args):
 
     # stop existing processes
     stop()
- 
+
     print("starting primary server on %(host_string)s" % env)
     with cd(env.project_directory):
         if(env.environment == "prod"):
             run_in_conda_env("./scripts/start_primary_production.sh")
         else:
             run_in_conda_env("./scripts/start_primary.sh")
+
 
 @task
 def start_worker(model, **args):
@@ -158,6 +163,7 @@ def start_worker(model, **args):
             run_in_conda_env("./scripts/start_worker_production.sh %s" % model)
         else:
             run_in_conda_env("./scripts/start_worker.sh %s" % model)
+
 
 def pull(repo, directory, branch="master"):
     with settings(warn_only=True):

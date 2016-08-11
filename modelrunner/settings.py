@@ -31,3 +31,18 @@ def initialize(redis_url="redis://@localhost:6379"):
     
     redisent.settings.initialize(redis_connection=redis_connection(redis_url),
                               prefix="modelrunner")
+
+def job_queue_name(model_name):
+    return "modelrunner:queues:{}".format(model_name)
+
+def primary_queue_name(primary_name):
+    return "modelrunner:queues:{}".format(primary_name)
+
+def node_channel_name(node_name):
+    return "modelrunner:channels:{}".format(node_name)
+
+def all_nodes_channel_name():
+    return "modelrunner:channels:nodes"
+
+def worker_name(node_url, model):
+    return "{};{}".format(node_url, model)

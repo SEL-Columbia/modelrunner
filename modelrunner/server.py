@@ -13,7 +13,6 @@ import tornado.gen
 from concurrent.futures import ThreadPoolExecutor
 
 from . import Job
-import manager as mgr
 
 # Thread Pool used to handle handle large file uploads in parallel
 # TODO:  Research more scalable methods
@@ -117,8 +116,7 @@ class JobHandler(tornado.web.RequestHandler):
         job_name = self.get_argument('job_name')
 
         # create new job
-        job = Job(model)
-        job.name = job_name
+        job = Job(model=model, name=job_name)
         file_url = self.get_argument('zip_url', default=False)
         # validation
         if((not file_url) and (not len(self.request.files) > 0)):

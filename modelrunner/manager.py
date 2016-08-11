@@ -20,7 +20,7 @@ from modelrunner.utils import fetch_file_from_url, zipdir
 from . import settings
 from modelrunner.redisent import RedisEntity
 from . import Job
-from . import Worker 
+from . import Node
 
 # setup log
 logger = logging.getLogger('modelrunner')
