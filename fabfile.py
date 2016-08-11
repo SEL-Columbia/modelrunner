@@ -96,7 +96,7 @@ def setup_model(model, **args):
     Install or update the deployment of a model on a machine
     (should NOT wipeout any data)
     Assumes machine has been setup with mr user under /home/mr
-  
+
     model:  model to setup or update
     """
     setup_env(**args)

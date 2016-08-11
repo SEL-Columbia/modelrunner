@@ -44,7 +44,7 @@ models = command_dict.keys()
 
 primary_server = modelrunner.PrimaryServer(config.options.primary_url,
                                            config.options.data_dir)
- 
+
 app_settings = {
     "static_path": config.options.static_path,
 }
@@ -57,9 +57,9 @@ application = tornado.web.Application([
             server.JobHandler, dict(primary_server=primary_server)),
         (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill",
             server.JobKillHandler, dict(primary_server=primary_server)),
-        (r"/admin/(.*)", 
-         server.AdminHandler, 
-         dict(primary_server=primary_server, 
+        (r"/admin/(.*)",
+         server.AdminHandler,
+         dict(primary_server=primary_server,
               admin_key=config.options.admin_key))
         ],
         template_path=config.options.template_path,

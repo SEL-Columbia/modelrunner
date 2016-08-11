@@ -2,7 +2,7 @@
 Test the WorkerServer through various scenarios
 
 The PrimaryServer is not necessary for testing
-Though we need to server the input from some http server 
+Though we need to server the input from some http server
 """
 
 import os
@@ -45,7 +45,7 @@ def make_config(model_name):
     return config
 
 def cleanup(config):
-    
+
     redis_conn = redis_connection()
 
     def delete_subdirs(d):
@@ -73,10 +73,10 @@ def setup_queued_job(config, job_name, input_file):
     # create a job to process
     job = Job(
             model=config["model"],
-            name=job_name, 
+            name=job_name,
             primary_url=config["primary_url"],
             primary_data_dir=config["primary_data_dir"])
- 
+
     # store it
     Job[job.uuid] = job
 
@@ -96,14 +96,14 @@ def setup_processed_job(config, job_name):
     # create a job to process
     job = Job(
             model=config["model"],
-            name=job_name, 
+            name=job_name,
             status=Job.STATUS_PROCESSED,
             primary_url=config["primary_url"],
             worker_url=config["worker_url"],
             primary_data_dir=config["primary_data_dir"],
             worker_data_dir=config["worker_data_dir"],
             on_primary=False)
-            
+
     # store it
     Job[job.uuid] = job
 
@@ -149,8 +149,8 @@ def get_worker(config):
                         config["command_dict"])
     channels = [node_channel_name(worker_handler.node.name),
                 all_nodes_channel_name()]
-    worker = Dispatcher(redis_connection(), 
-                        worker_handler, 
+    worker = Dispatcher(redis_connection(),
+                        worker_handler,
                         job_queue_name(config["model"]),
                         channels)
     return worker
@@ -160,14 +160,14 @@ def get_primary(config):
     primary_handler = PrimaryServer(
                         config["primary_url"],
                         config["primary_data_dir"])
-    channels = [node_channel_name(primary_handler.node.name), 
+    channels = [node_channel_name(primary_handler.node.name),
                 all_nodes_channel_name()]
     primary = Dispatcher(
-                redis_connection(), 
-                primary_handler, 
+                redis_connection(),
+                primary_handler,
                 primary_queue_name(primary_handler.node.name),
                 channels)
-    return primary 
+    return primary
 
 
 def publish(channel_name, command_dict, wait_time=0):
@@ -179,16 +179,16 @@ def publish(channel_name, command_dict, wait_time=0):
         time.sleep(wait_time)
 
     publish_command(redis_conn, channel_name, command_dict)
-    
+
 def make_publish_function(channel_name, command_dict, wait_time=0):
     """
     return a function that will publish a command_dict
-    
+
     to be used as a target of a thread
     """
     def publish_fun():
         publish(channel_name, command_dict, wait_time=wait_time)
-    
+
     return publish_fun
 
 #</helpers>
@@ -197,9 +197,9 @@ def make_publish_function(channel_name, command_dict, wait_time=0):
 def test_run_good_bad():
 
     model_name = "test"
-    config = make_config(model_name)    
+    config = make_config(model_name)
 
-    worker = get_worker(config) 
+    worker = get_worker(config)
     sleep8_job = setup_queued_job(config, "processed_test", "sleep_8.zip")
     bad_job = setup_queued_job(config, "failed_test", "bad.zip")
     enqueue_worker_job(sleep8_job)
@@ -208,7 +208,7 @@ def test_run_good_bad():
     # process good and bad jobs in bg thread
     tq = Thread(target=worker.wait_for_queue_commands)
     tq.start()
-    
+
     # give it some time
     time.sleep(10)
 
@@ -218,8 +218,8 @@ def test_run_good_bad():
     # stop waiting
     stop_queue_command = {'command': 'STOP_PROCESSING_QUEUE'}
     enqueue_command(
-        redis_connection(), 
-        job_queue_name(model_name), 
+        redis_connection(),
+        job_queue_name(model_name),
         stop_queue_command)
 
     tq.join()
@@ -230,12 +230,12 @@ def test_run_good_bad():
 def test_run_commands():
 
     model_name = "test"
-    config = make_config(model_name)    
+    config = make_config(model_name)
 
     name = worker_name(config["worker_url"], config["model"])
     worker_channel = node_channel_name(name)
 
-    worker = get_worker(config) 
+    worker = get_worker(config)
     killed_job = setup_queued_job(config, "killed_test", "sleep_8.zip")
     enqueue_worker_job(killed_job)
 
@@ -259,7 +259,7 @@ def test_run_commands():
     # have worker update status
     status_command = {"command": "UPDATE_STATUS"}
     publish(worker_channel, status_command)
-   
+
     # give it a sec
     time.sleep(1)
 
@@ -274,15 +274,15 @@ def test_run_commands():
     publish(worker_channel, stop_channel_command)
     tq.join()
     tc.join()
- 
+
     cleanup(config)
 
 def test_primary_enqueue_kill():
     """ test enqueue, kill """
     model_name = "test"
-    config = make_config(model_name)    
+    config = make_config(model_name)
 
-    primary = get_primary(config) 
+    primary = get_primary(config)
     name = config["primary_url"]
     primary_channel = node_channel_name(name)
 
@@ -290,9 +290,9 @@ def test_primary_enqueue_kill():
     job = Job(model_name)
     job.name = "primary_test"
     job_input_url = "{}{}/sleep_8.zip".format(
-                        config["primary_url"], 
+                        config["primary_url"],
                         config["primary_data_dir"])
- 
+
     # enqueue job
     primary.command_handler.enqueue(job, job_data_url=job_input_url)
 
@@ -323,9 +323,9 @@ def test_primary_enqueue_kill():
 def test_primary_complete():
     """ test compete job """
     model_name = "test"
-    config = make_config(model_name)    
+    config = make_config(model_name)
 
-    primary = get_primary(config) 
+    primary = get_primary(config)
     name = config["primary_url"]
     primary_channel = node_channel_name(name)
 
@@ -354,8 +354,8 @@ def test_primary_complete():
     stop_channel_command = {'command': 'STOP_PROCESSING_CHANNELS'}
     publish(primary_channel, stop_queue_command)
     publish(primary_channel, stop_channel_command)
-    
+
     tq.join()
     tc.join()
-    
+
     cleanup(config)

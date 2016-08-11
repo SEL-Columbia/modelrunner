@@ -46,11 +46,11 @@ command_dict = config.options.group_dict("model_command")
 primary_handler = PrimaryServer(
                     config.options.primary_url,
                     config.options.data_dir)
-channels = [node_channel_name(primary_handler.node.name), 
+channels = [node_channel_name(primary_handler.node.name),
             all_nodes_channel_name()]
 primary = Dispatcher(
-            redis_connection(), 
-            primary_handler, 
+            redis_connection(),
+            primary_handler,
             primary_queue_name(primary_handler.node.name),
             channels)
 

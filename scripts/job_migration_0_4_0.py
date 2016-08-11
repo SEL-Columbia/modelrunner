@@ -5,7 +5,7 @@ Script to move all job logs to primary server
 
 Migration 0.3.0 -> 0.4.0
 
-Assumes that v0.4.0 of primary and workers of your modelrunner system 
+Assumes that v0.4.0 of primary and workers of your modelrunner system
 are running
 """
 

@@ -9,14 +9,14 @@ import argparse
 
 description = """
               Parse and aggregate errors from python model logs
-              (passed to stdin line by line). 
-                 
+              (passed to stdin line by line).
+
               Outputs a csv of error records if --aggregate_fields are not entered.
               Otherwise, outputs aggregate errors/counts
               """
 
 parser = argparse.ArgumentParser(description=description)
-parser.add_argument("--aggregate_fields", 
+parser.add_argument("--aggregate_fields",
                     nargs='+',
                     help="aggregate records by fields")
 args = parser.parse_args()
@@ -63,6 +63,6 @@ if len(records) > 0:
         print(",".join(keys))
         for record in records:
             print(",".join(map(
-                            lambda k: 
-                            format_csv_cell(str(record.get(k, ''))), 
+                            lambda k:
+                            format_csv_cell(str(record.get(k, ''))),
                             keys)))

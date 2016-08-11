@@ -29,7 +29,7 @@ parse_config_file(config.options.config_file)
 
 # initialize the global application settings
 modelrunner.settings.initialize(config.options.redis_url)
- 
+
 
 # <block> Code to map pickled classes to new namespace
 renametable = {

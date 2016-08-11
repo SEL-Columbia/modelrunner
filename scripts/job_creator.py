@@ -19,7 +19,7 @@ modelrunner.settings.initialize(config.options.redis_url)
 
 primary_server = modelrunner.PrimaryServer(config.options.primary_url,
                                            config.options.data_dir)
-             
+
 job = modelrunner.Job(config.options.model)
 Job[job.uuid] = job
 input_fh = open(config.options.input_file, 'r')

@@ -51,8 +51,8 @@ worker_handler = WorkerServer(
                     command_dict)
 channels = [node_channel_name(worker_handler.node.name),
             all_nodes_channel_name()]
-worker = Dispatcher(redis_connection(), 
-                    worker_handler, 
+worker = Dispatcher(redis_connection(),
+                    worker_handler,
                     job_queue_name(config.options.model),
                     channels)
 

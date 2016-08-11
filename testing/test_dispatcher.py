@@ -11,7 +11,7 @@ class PrimaryCommandHandler:
     """
 
     def __init__(self):
-        
+
         self.name = 'primary'
         self.count = 0
         self.jobs = {}
@@ -20,8 +20,8 @@ class PrimaryCommandHandler:
         }
 
     def enqueue_job(self, queue):
-        job = {'id': self.count, 
-               'origin': self.name, 
+        job = {'id': self.count,
+               'origin': self.name,
                'status': 'NEW'}
 
         command_dict = {'command': 'PROCESS_JOB', 'job': job}
@@ -39,13 +39,13 @@ class PrimaryCommandHandler:
 
 
 class WorkerCommandHandler:
-    
+
     """
     Implement 'CommandHandler interface' for testing Dispatcher
     """
 
     def __init__(self, sleep_time=4):
-        
+
         self.status = "STATUS_WAITING"
         self.jobs = {}
         self.sleep_time = sleep_time
@@ -62,7 +62,7 @@ class WorkerCommandHandler:
         while(sleep_amount < self.sleep_time):
             time.sleep(1)
             if job['status'] == 'KILLING':
-                job['status'] = 'KILLED' 
+                job['status'] = 'KILLED'
                 break
             sleep_amount += 1
 
@@ -74,7 +74,7 @@ class WorkerCommandHandler:
     def kill_job(self, command_dict):
         job_id = command_dict['job_id']
         self.jobs[job_id]['status'] = 'KILLING'
- 
+
 
 def test_primary_worker_scenario():
 
@@ -86,9 +86,9 @@ def test_primary_worker_scenario():
                          "primary",
                          ["primary"])
 
-    worker = Dispatcher(redis_connection(), 
-                        worker_handler, 
-                        "worker", 
+    worker = Dispatcher(redis_connection(),
+                        worker_handler,
+                        "worker",
                         ["worker"])
 
     # start them up
@@ -101,14 +101,14 @@ def test_primary_worker_scenario():
     primary_handler.enqueue_job("worker")
 
     # wait for it to complete
-    sleep_time = 0 
+    sleep_time = 0
     while(sleep_time < worker_handler.sleep_time + 1):
         time.sleep(1)
         sleep_time += 1
 
     assert len(primary_handler.jobs) == 1 and\
            primary_handler.jobs[0]['status'] == 'COMPLETE'
-    
+
     stop_queue_command = {'command': 'STOP_PROCESSING_QUEUE'}
     stop_channel_command = {'command': 'STOP_PROCESSING_CHANNELS'}
 

@@ -33,9 +33,9 @@ class User(RedisEntity):
 
 
 def test_redisent():
-    
-    users = {"0": User(0, "user0", "2000-01-01T00:00:00"), 
-             "1": User(1, "user1", "2000-01-02T00:00:00"), 
+
+    users = {"0": User(0, "user0", "2000-01-01T00:00:00"),
+             "1": User(1, "user1", "2000-01-02T00:00:00"),
              "2": User(2, "user2", "2000-01-03T00:00:00")}
 
     # populate "test:users" hash
@@ -46,7 +46,7 @@ def test_redisent():
 
     assert all([User[key] == users[key] for key in User.keys()]),\
            "keys test fails"
-    
+
     assert all([entity == users[key] for key, entity in User.items()]),\
            "items test fails"
 
