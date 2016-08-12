@@ -1,3 +1,14 @@
+## 0.5.0
+
+- Major Refactoring
+  - standardized 'command' protocol between compute nodes
+  - factored out 'dispatch' of command handlers
+  - nodes now also listen on channels (for operational commands)
+- Expose node status via /status and /status/refresh endpoints
+- Python tests that can run via nose
+
+Closes #42, #48, #63, and #68-75
+
 ## 0.4.7
 
 - Fix kill bug #66
@@ -13,7 +24,7 @@
 
 ## 0.4.4
 
-- Make deployment more geared toward single model per worker
+- Deployment geared more toward single model per worker
 - Closes #57
 
 ## 0.4.3
