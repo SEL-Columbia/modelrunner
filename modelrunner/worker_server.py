@@ -130,7 +130,8 @@ class WorkerServer:
                                    job_uuid=job.uuid,
                                    job_pid=popen_proc.pid)
 
-        logger.info("job {} running with pid {}".
+        logger.info(
+            "job {} running with pid {}".
             format(job.uuid, popen_proc.pid))
 
         # wait for command to finish or for it to be killed

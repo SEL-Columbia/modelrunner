@@ -49,13 +49,14 @@ app_settings = {
     "static_path": config.options.static_path,
 }
 
+job_id_regex = "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
 application = tornado.web.Application([
         (r"/", server.MainHandler),
         (r"/jobs/submit", server.SubmitJobForm, dict(models=models)),
         (r"/jobs", server.JobHandler, dict(primary_server=primary_server)),
-        (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
+        (r"/jobs/{}".format(job_id_regex),
             server.JobHandler, dict(primary_server=primary_server)),
-        (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill",
+        (r"/jobs/{}/kill".format(job_id_regex),
             server.JobKillHandler, dict(primary_server=primary_server)),
         (r"/admin/(.*)",
          server.AdminHandler,

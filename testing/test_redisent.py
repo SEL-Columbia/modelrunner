@@ -8,6 +8,7 @@ import datetime
 RedisEntity._prefix = "test"
 RedisEntity._db = settings.redis_connection()
 
+
 class User(RedisEntity):
 
     def __init__(self, id=None, name=None, created=None):
@@ -21,12 +22,14 @@ class User(RedisEntity):
         elif isinstance(created, datetime.datetime):
             return created
         else:
-            raise ValueError("Invalid type {} for created attribute".\
-                             format(type(created)))
+            raise ValueError(
+                "Invalid type {} for created attribute".
+                format(type(created)))
 
     def __eq__(self, other):
-        return (isinstance(other, self.__class__)
-            and self.__dict__ == other.__dict__)
+        return (
+            isinstance(other, self.__class__) and
+            self.__dict__ == other.__dict__)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -44,11 +47,13 @@ def test_redisent():
 
     assert len(User) == len(users), "length test fails"
 
-    assert all([User[key] == users[key] for key in User.keys()]),\
-           "keys test fails"
+    assert all(
+        [User[key] == users[key] for key in User.keys()]),\
+        "keys test fails"
 
-    assert all([entity == users[key] for key, entity in User.items()]),\
-           "items test fails"
+    assert all(
+        [entity == users[key] for key, entity in User.items()]),\
+        "items test fails"
 
     # delete users
     for user in users:

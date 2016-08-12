@@ -11,19 +11,22 @@ See config.py or pass --help to command for command line args
 
 import sys
 import logging
-import traceback
 from threading import Thread
 
-from modelrunner import config,\
-                        WorkerServer,\
-                        Dispatcher,\
-                        __version__
+from modelrunner import (
+    config,
+    WorkerServer,
+    Dispatcher,
+    __version__
+)
 
-from modelrunner.settings import initialize,\
-                                 redis_connection,\
-                                 job_queue_name,\
-                                 node_channel_name,\
-                                 all_nodes_channel_name
+from modelrunner.settings import (
+    initialize,
+    redis_connection,
+    job_queue_name,
+    node_channel_name,
+    all_nodes_channel_name
+)
 
 from tornado.options import parse_command_line, parse_config_file
 

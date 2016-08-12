@@ -5,7 +5,12 @@ Script for submitting job to system manually
 """
 
 import modelrunner
-from modelrunner import config
+from modelrunner.settings import initialize
+from modelrunner import (
+    config,
+    Job,
+    PrimaryServer
+)
 
 # setup config options
 from tornado.options import parse_command_line, parse_config_file
@@ -15,10 +20,11 @@ parse_command_line()
 parse_config_file(config.options.config_file)
 
 # initialize the global application settings
-modelrunner.settings.initialize(config.options.redis_url)
+initialize(config.options.redis_url)
 
-primary_server = modelrunner.PrimaryServer(config.options.primary_url,
-                                           config.options.data_dir)
+primary_server = PrimaryServer(
+                    config.options.primary_url,
+                    config.options.data_dir)
 
 job = modelrunner.Job(config.options.model)
 Job[job.uuid] = job

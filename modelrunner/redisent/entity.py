@@ -20,7 +20,8 @@ class RedisEntityMeta(type):
     def __getitem__(cls, key):
         json_entity = cls._db.hget(cls.hash_name(), key)
         if json_entity is None:
-            raise KeyError("Key {} does not exist in {}".
+            raise KeyError(
+                "Key {} does not exist in {}".
                 format(key, cls.hash_name()))
         else:
             return json.loads(json_entity, object_hook=cls.json_decode)

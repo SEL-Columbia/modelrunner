@@ -9,29 +9,28 @@ Assumes that v0.4.0 of primary and workers of your modelrunner system
 are running
 """
 
+from signal import signal, SIGPIPE, SIG_DFL
 import urllib2
 import logging
-from modelrunner import config
-import modelrunner
-import modelrunner.settings
+from modelrunner import (
+    config,
+    Job
+)
+
+from modelrunner.settings import (
+    initialize,
+    primary_queue_name,
+    redis_connection
+)
 
 from tornado.options import parse_command_line, parse_config_file
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 logger = logging.getLogger('modelrunner')
 
 # Prevents this script from failing when output is piped
 # to another process
-from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
-# so we can load config via cmd line args
-parse_command_line()
-parse_config_file(config.options.config_file)
 
 def test_url(url):
     """
@@ -43,10 +42,15 @@ def test_url(url):
         return False
     return True
 
-# initialize the global application settings
-modelrunner.settings.initialize(config.options.redis_url)
 
-jobs = modelrunner.Job.values()
+# so we can load config via cmd line args
+parse_command_line()
+parse_config_file(config.options.config_file)
+
+# initialize the global application settings
+initialize(config.options.redis_url)
+
+jobs = Job.values()
 
 # get the log file for all jobs
 for job in jobs:
@@ -60,5 +64,5 @@ for job in jobs:
         # then job.on_primary should be False and we need to retrieve it
         Job[job.uuid] = job
         # push message to primary to get data for job
-        primary_queue = "modelrunner:queues:" + jm.primary_url
-        settings.redis_connection.rpush(primary_queue, job.uuid)
+        primary_queue = primary_queue_name(job.primary_url)
+        redis_connection.rpush(primary_queue, job.uuid)

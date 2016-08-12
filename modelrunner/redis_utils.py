@@ -34,7 +34,8 @@ def enqueue_command(redis_conn, queue_name, command_dict):
     """
     enqueue command on redis queue
     """
-    logger.info("adding command {} to queue {}".
+    logger.info(
+        "adding command {} to queue {}".
         format(command_dict, queue_name))
     redis_conn.rpush(queue_name, json_dumps_datetime(command_dict))
 

@@ -10,21 +10,24 @@ See config.py or pass --help to command for command line args
 
 import sys
 import logging
-import traceback
 from threading import Thread
 from tornado.options import parse_command_line, parse_config_file
 
 
-from modelrunner import config,\
-                        PrimaryServer,\
-                        Dispatcher,\
-                        __version__
+from modelrunner import (
+    config,
+    PrimaryServer,
+    Dispatcher,
+    __version__
+)
 
-from modelrunner.settings import initialize,\
-                                 redis_connection,\
-                                 node_channel_name,\
-                                 all_nodes_channel_name,\
-                                 primary_queue_name
+from modelrunner.settings import (
+    initialize,
+    redis_connection,
+    node_channel_name,
+    all_nodes_channel_name,
+    primary_queue_name
+)
 
 # setup log
 logger = logging.getLogger('modelrunner')

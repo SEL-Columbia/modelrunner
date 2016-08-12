@@ -108,8 +108,10 @@ class PrimaryServer:
             #          remove it from the queue and mark as killed
 
             job_queue = job_queue_name(job.model)
-            logger.info("killing job {} by removing from queue {}".
+            logger.info(
+                "killing job {} by removing from queue {}".
                 format(job.uuid, job_queue))
+
             command_dict = {'command': 'PROCESS_JOB', 'job_uuid': job.uuid}
             remove_command(redis_connection(), job_queue, command_dict)
             job.status = Job.STATUS_KILLED

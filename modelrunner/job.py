@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Job
-"""
-
 import datetime
 from uuid import uuid4
 from redisent import RedisEntity
