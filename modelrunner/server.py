@@ -12,7 +12,7 @@ import tornado.web
 import tornado.gen
 from concurrent.futures import ThreadPoolExecutor
 
-from . import Job
+from . import (Job, Node)
 
 # Thread Pool used to handle handle large file uploads in parallel
 # TODO:  Research more scalable methods
@@ -85,6 +85,60 @@ class JobKillHandler(tornado.web.RequestHandler):
                          'id': job.uuid}
         self.write(response_dict)
         self.finish()
+
+
+class StatusRefreshHandler(tornado.web.RequestHandler):
+    """
+    Handles Status Refresh
+    """
+
+    def initialize(self, primary_server):
+        """
+        init with the PrimaryServer instance
+
+        Args:
+            primary_server (modelrunner.PrimaryServer):  PrimaryServer instance
+        """
+
+        self.primary_server = primary_server
+
+
+    def get(self):
+        """
+        Refresh node status
+
+        """
+        self.primary_server.refresh_node_status()
+        response_dict = {'message': "OK"}
+        self.write(response_dict)
+        self.finish()
+
+
+class StatusHandler(tornado.web.RequestHandler):
+    """
+    Handles system status requests
+    """
+
+    def get(self):
+        """
+        Get or view node status
+
+        """
+
+        def job_json_dict(node):
+            return DateTimeEncoder().encode(node.__dict__)
+
+        nodes = Node.values()
+
+        # handle json request
+        if 'application/json' in self.request.headers.get('Accept', ''):
+            # write list as dict with one top-level data key to avoid
+            # vulnerability:  http://stackoverflow.com/a/21692087
+            data_dict = {'data': [node.__dict__ for node in nodes]}
+            encoded = DateTimeEncoder().encode(data_dict)
+            self.write(encoded)
+        else:
+            self.render("view_nodes.html", nodes=nodes)
 
 
 class JobHandler(tornado.web.RequestHandler):
@@ -185,20 +239,14 @@ class AdminHandler(tornado.web.RequestHandler):
     Handles admin tasks
     This is meant as a lightweight backdoor to admin functionality
 
-    TODO:  Either handle "status" request in this handler OR create new one
-           in which case, we don't need the primary_server member
+    VERY INSECURE
     """
 
-    def initialize(self, primary_server, admin_key=None):
+    def initialize(self, admin_key=None):
         """
-        init with the PrimaryServer instance
-
         Args:
-            primary_server (modelrunner.PrimaryServer):  PrimaryServer instance
             request_admin_key (str):  Key required to access this section
         """
-
-        self.primary_server = primary_server
         self.admin_key = admin_key
 
     def get(self, request_admin_key=None):

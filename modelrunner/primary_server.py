@@ -5,14 +5,19 @@ import logging
 
 import modelrunner
 from modelrunner.utils import fetch_file_from_url
-from modelrunner.redis_utils import enqueue_command,\
-                                    remove_command,\
-                                    publish_command
+from modelrunner.redis_utils import (
+    enqueue_command,
+    remove_command,
+    publish_command
+)
 
-from modelrunner.settings import redis_connection,\
-                                 job_queue_name,\
-                                 worker_name,\
-                                 node_channel_name
+from modelrunner.settings import (
+    redis_connection,
+    job_queue_name,
+    worker_name,
+    node_channel_name,
+    all_nodes_channel_name
+)
 
 from . import Job
 from . import Node
@@ -53,6 +58,24 @@ class PrimaryServer:
         We don't want others manipulating the node directly
         """
         return self._node
+
+    def refresh_node_status(self):
+        """
+        Refresh the status of all nodes by
+        1.  Deleting existing state
+        2.  Publishing a request for all nodes to update
+
+        All listening nodes will update the Node hash with their state
+        """
+
+        for node in Node.values():
+            del Node[node.name]
+
+        status_command = {"command": "UPDATE_STATUS"}
+        publish_command(
+            redis_connection(),
+            all_nodes_channel_name(),
+            status_command)
 
     def enqueue(self, job, job_data_blob=None, job_data_url=None):
         """
