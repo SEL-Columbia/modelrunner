@@ -5,8 +5,13 @@ Main modelrunner package
 
 # initialize logging
 import logging
+from job import Job  # noqa
+from node import Node  # noqa
+from dispatcher import Dispatcher  # noqa
+from worker_server import WorkerServer  # noqa
+from primary_server import PrimaryServer  # noqa
 
-__version__ = "0.4.7"
+__version__ = "0.5.0"
 
 logger = logging.getLogger('modelrunner')
 logger.setLevel(logging.INFO)
@@ -19,6 +24,3 @@ logger.addHandler(ch)
 
 # need to set this, otherwise 'root' logger also logs
 logging.getLogger('modelrunner').propagate = False
-
-from manager import JobManager
-from manager import Job

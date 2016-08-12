@@ -10,7 +10,11 @@ See config.py or pass --help to command for command line args
 
 import sys
 import logging
+
+import modelrunner
+from modelrunner.settings import initialize
 from modelrunner import config
+from modelrunner import server
 from tornado.options import parse_command_line, parse_config_file
 
 import tornado
@@ -19,55 +23,57 @@ import tornado.web
 import tornado.escape
 import tornado.gen
 
-import modelrunner as mr
-import modelrunner.server as server
 
 # setup log
 logger = logging.getLogger('modelrunner')
 
 logger.info("modelrunner %s (Python %s)" %
-            (mr.__version__,
+            (modelrunner.__version__,
              '.'.join(map(str, sys.version_info[:3]))))
 
 # so we can load config via cmd line args
 parse_command_line()
 parse_config_file(config.options.config_file)
 
-# get the command_ keys
+# initialize the global application settings
+initialize(config.options.redis_url)
+
+# get the command keys
 command_dict = config.options.group_dict("model_command")
 models = command_dict.keys()
 
-jm = mr.JobManager(config.options.redis_url,
-                   config.options.primary_url,
-                   config.options.worker_url,
-                   config.options.data_dir,
-                   command_dict,
-                   config.options.worker_is_primary)
+primary_server = modelrunner.PrimaryServer(config.options.primary_url,
+                                           config.options.data_dir)
 
-settings = {
+app_settings = {
     "static_path": config.options.static_path,
 }
 
+job_id_regex = "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
 application = tornado.web.Application([
         (r"/", server.MainHandler),
         (r"/jobs/submit", server.SubmitJobForm, dict(models=models)),
-        (r"/jobs", server.JobHandler, dict(job_mgr=jm)),
-        (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
-            server.JobHandler, dict(job_mgr=jm)),
-        (r"/jobs/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/kill",
-            server.JobKillHandler, dict(job_mgr=jm)),
-        (r"/admin/(.*)", 
-         server.AdminHandler, 
-         dict(job_mgr=jm, admin_key=config.options.admin_key))
+        (r"/jobs", server.JobHandler, dict(primary_server=primary_server)),
+        (r"/jobs/{}".format(job_id_regex),
+            server.JobHandler, dict(primary_server=primary_server)),
+        (r"/jobs/{}/kill".format(job_id_regex),
+            server.JobKillHandler, dict(primary_server=primary_server)),
+        (r"/status", server.StatusHandler),
+        (r"/status/refresh",
+         server.StatusRefreshHandler,
+         dict(primary_server=primary_server)),
+        (r"/admin/(.*)",
+         server.AdminHandler,
+         dict(primary_server=primary_server,
+              admin_key=config.options.admin_key))
         ],
         template_path=config.options.template_path,
         debug=config.options.debug,
         ui_modules={'JobOptions': server.JobOptionsModule},
-        **settings
+        **app_settings
         )
 
 logger.info("modelrunner server listening on port %s" % config.options.port)
 application.listen(config.options.port)
 
-# TODO:  Setup JobManager with config options and command_dict
 tornado.ioloop.IOLoop.instance().start()

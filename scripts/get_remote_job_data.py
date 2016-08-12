@@ -7,12 +7,14 @@ import requests
 import os
 import json
 
+
 def key_val(s):
     try:
         key, val = s.split(':')
-        return key, val 
+        return key, val
     except:
         raise argparse.ArgumentTypeError("Key Vals must be key:val")
+
 
 def retrieve_job_file(job_dict, job_file, job_data_dir, timeout=0.1):
     """
@@ -29,7 +31,8 @@ def retrieve_job_file(job_dict, job_file, job_data_dir, timeout=0.1):
     local_file = os.path.join(job_data_dir, uuid, job_file)
     response = requests.get(file_url, stream=True, timeout=timeout)
     if not response.ok:
-        raise requests.HTTPError("{} had error code {}".format(file_url, response.status_code))
+        raise requests.HTTPError(
+            "{} had error code {}".format(file_url, response.status_code))
 
     if not os.path.exists(os.path.dirname(local_file)):
         os.makedirs(os.path.dirname(local_file))
@@ -39,21 +42,33 @@ def retrieve_job_file(job_dict, job_file, job_data_dir, timeout=0.1):
             local_file_stream.write(block)
 
 
-parser = argparse.ArgumentParser(description="Get job info from modelrunner instance api")
-parser.add_argument("--url", 
+def filter_by_key_val_regex(job_dict, key_val_tuples):
+    result = True
+    for key, val in key_val_tuples:
+        result = (
+            bool(re.match(val.encode('string-escape'), job_dict[key])) and
+            result)
+
+    return result
+
+
+parser = argparse.ArgumentParser(
+            description="Get job info from modelrunner instance api")
+parser.add_argument("--url",
                     default="http://modelrunner.io",
                     help="full url of modelrunner instance")
 parser.add_argument("--key_val_matches",  type=key_val, nargs='*',
-                    help="if specified, these regex filters determine which jobs to retrieve files for")
+                    help="if specified, these regex filters determine which "
+                         "jobs to retrieve files for")
 
-## Only relevant for job file retrieval (i.e. if one or more file_names is specified)
-parser.add_argument("--timeout", 
+# Only relevant for job file retrieval
+parser.add_argument("--timeout",
                     default=0.1,
                     help="timeout in seconds of each file request")
-parser.add_argument("--job_data_dir", 
+parser.add_argument("--job_data_dir",
                     default="job_data",
                     help="directory to store job files")
-parser.add_argument("--file_names", 
+parser.add_argument("--file_names",
                     nargs='+',
                     help="files from job to retrieve")
 
@@ -64,12 +79,6 @@ url = re.sub(r'/$', '', args.url) + '/jobs'
 
 response = requests.get(url, headers=headers)
 jobs = response.json()['data']
-
-def filter_by_key_val_regex(job_dict, key_val_tuples):
-    result = True
-    for key, val in key_val_tuples:
-        result = bool(re.match(val.encode('string-escape'), job_dict[key])) and result
-    return result
 
 # apply filter
 if args.key_val_matches:
@@ -83,7 +92,7 @@ jobs.sort(key=lambda job: job['created'], reverse=True)
 # check if we have files to retrieve
 if args.file_names:
     for i in range(0, len(jobs)):
-        for f in args.file_names:    
+        for f in args.file_names:
             try:
                 retrieve_job_file(jobs[i], f, args.job_data_dir, args.timeout)
             except Exception as e:
@@ -91,7 +100,7 @@ if args.file_names:
                 print("Failed to retrieve {} for job {}", (f, jobs[i]['uuid']))
             else:
                 print("Success retrieving {} for job {}", (f, jobs[i]['uuid']))
-         
+
 else:
     # just print out jobs
     print(json.dumps(jobs, sort_keys=True, indent=4, separators=(',', ': ')))

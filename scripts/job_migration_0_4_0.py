@@ -5,32 +5,32 @@ Script to move all job logs to primary server
 
 Migration 0.3.0 -> 0.4.0
 
-Assumes that v0.4.0 of primary and workers of your modelrunner system 
+Assumes that v0.4.0 of primary and workers of your modelrunner system
 are running
 """
 
+from signal import signal, SIGPIPE, SIG_DFL
 import urllib2
 import logging
-from modelrunner import config
-import modelrunner as mr
+from modelrunner import (
+    config,
+    Job
+)
+
+from modelrunner.settings import (
+    initialize,
+    primary_queue_name,
+    redis_connection
+)
 
 from tornado.options import parse_command_line, parse_config_file
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 logger = logging.getLogger('modelrunner')
 
 # Prevents this script from failing when output is piped
 # to another process
-from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
-# so we can load config via cmd line args
-parse_command_line()
-parse_config_file(config.options.config_file)
 
 def test_url(url):
     """
@@ -43,17 +43,14 @@ def test_url(url):
     return True
 
 
-# get the command_ keys
-command_dict = config.options.group_dict("model_command")
+# so we can load config via cmd line args
+parse_command_line()
+parse_config_file(config.options.config_file)
 
-jm = mr.JobManager(config.options.redis_url,
-                   config.options.primary_url,
-                   config.options.worker_url,
-                   config.options.data_dir,
-                   command_dict,
-                   config.options.worker_is_primary)
+# initialize the global application settings
+initialize(config.options.redis_url)
 
-jobs = jm.get_jobs()
+jobs = Job.values()
 
 # get the log file for all jobs
 for job in jobs:
@@ -65,8 +62,7 @@ for job in jobs:
     if not log_on_primary and log_on_worker:
         logger.info("job {} log not on primary".format(job.uuid))
         # then job.on_primary should be False and we need to retrieve it
-        jm.add_update_job_table(job)
+        Job[job.uuid] = job
         # push message to primary to get data for job
-        primary_queue = "modelrunner:queues:" + jm.primary_url
-        jm.rdb.rpush(primary_queue, job.uuid)
-            
+        primary_queue = primary_queue_name(job.primary_url)
+        redis_connection.rpush(primary_queue, job.uuid)

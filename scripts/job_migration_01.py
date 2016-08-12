@@ -4,10 +4,20 @@
 Script to migrate python pickled jobs to json based jobs
 """
 
-from modelrunner import config
-import modelrunner as mr
+from modelrunner import (
+    config,
+    Job
+)
 
-from tornado.options import parse_command_line, parse_config_file
+from modelrunner.settings import (
+    initialize,
+    redis_connection
+)
+
+from tornado.options import (
+    parse_command_line,
+    parse_config_file
+)
 
 import pickle
 
@@ -26,15 +36,9 @@ signal(SIGPIPE, SIG_DFL)
 parse_command_line()
 parse_config_file(config.options.config_file)
 
-# get the command_ keys
-command_dict = config.options.group_dict("model_command")
+# initialize the global application settings
+initialize(config.options.redis_url)
 
-jm = mr.JobManager(config.options.redis_url,
-                   config.options.primary_url,
-                   config.options.worker_url,
-                   config.options.data_dir,
-                   command_dict,
-                   config.options.worker_is_primary)
 
 # <block> Code to map pickled classes to new namespace
 renametable = {
@@ -64,9 +68,9 @@ def loads(str):
 # </block> Code to map pickled classes to new namespace
 
 
-pickled_objs = jm.rdb.hgetall("modelrunner:jobs")
+pickled_objs = redis_connection.hgetall("modelrunner:jobs")
 jobs = [loads(pobj[1]) for pobj in pickled_objs.items()]
 
 # write them back as correct instance types
 for job in jobs:
-    jm.add_update_job_table(job)
+    Job[job.uuid] = job

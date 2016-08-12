@@ -12,7 +12,7 @@ import tornado.web
 import tornado.gen
 from concurrent.futures import ThreadPoolExecutor
 
-import manager as mgr
+from . import (Job, Node)
 
 # Thread Pool used to handle handle large file uploads in parallel
 # TODO:  Research more scalable methods
@@ -60,15 +60,15 @@ class JobKillHandler(tornado.web.RequestHandler):
     Handles requests to kill a job
     """
 
-    def initialize(self, job_mgr):
+    def initialize(self, primary_server):
         """
-        init with the Manager instance
+        init with the PrimaryServer instance
 
         Args:
-            job_mgr (modelrunner.JobManager):  JobManager instance
+            primary_server (modelrunner.PrimaryServer):  PrimaryServer instance
         """
 
-        self.job_mgr = job_mgr
+        self.primary_server = primary_server
 
     def get(self, job_uuid):
         """
@@ -79,12 +79,66 @@ class JobKillHandler(tornado.web.RequestHandler):
 
         """
 
-        job = self.job_mgr.get_job(job_uuid)
-        self.job_mgr.kill_job(job)
+        job = Job[job_uuid]
+        self.primary_server.kill_job(job)
         response_dict = {'message': "OK:  Killed job id {}".format(job.uuid),
                          'id': job.uuid}
         self.write(response_dict)
         self.finish()
+
+
+class StatusRefreshHandler(tornado.web.RequestHandler):
+    """
+    Handles Status Refresh
+    """
+
+    def initialize(self, primary_server):
+        """
+        init with the PrimaryServer instance
+
+        Args:
+            primary_server (modelrunner.PrimaryServer):  PrimaryServer instance
+        """
+
+        self.primary_server = primary_server
+
+
+    def get(self):
+        """
+        Refresh node status
+
+        """
+        self.primary_server.refresh_node_status()
+        response_dict = {'message': "OK"}
+        self.write(response_dict)
+        self.finish()
+
+
+class StatusHandler(tornado.web.RequestHandler):
+    """
+    Handles system status requests
+    """
+
+    def get(self):
+        """
+        Get or view node status
+
+        """
+
+        def job_json_dict(node):
+            return DateTimeEncoder().encode(node.__dict__)
+
+        nodes = Node.values()
+
+        # handle json request
+        if 'application/json' in self.request.headers.get('Accept', ''):
+            # write list as dict with one top-level data key to avoid
+            # vulnerability:  http://stackoverflow.com/a/21692087
+            data_dict = {'data': [node.__dict__ for node in nodes]}
+            encoded = DateTimeEncoder().encode(data_dict)
+            self.write(encoded)
+        else:
+            self.render("view_nodes.html", nodes=nodes)
 
 
 class JobHandler(tornado.web.RequestHandler):
@@ -92,15 +146,15 @@ class JobHandler(tornado.web.RequestHandler):
     Handles job submission posts and listing
     """
 
-    def initialize(self, job_mgr):
+    def initialize(self, primary_server):
         """
-        init with the Manager instance
+        init with the PrimaryServer instance
 
         Args:
-            job_mgr (modelrunner.JobManager):  JobManager instance
+            primary_server (modelrunner.PrimaryServer):  PrimaryServer instance
         """
 
-        self.job_mgr = job_mgr
+        self.primary_server = primary_server
 
     @tornado.gen.coroutine
     def post(self):
@@ -116,8 +170,7 @@ class JobHandler(tornado.web.RequestHandler):
         job_name = self.get_argument('job_name')
 
         # create new job
-        job = mgr.Job(model)
-        job.name = job_name
+        job = Job(model=model, name=job_name)
         file_url = self.get_argument('zip_url', default=False)
         # validation
         if((not file_url) and (not len(self.request.files) > 0)):
@@ -134,13 +187,13 @@ class JobHandler(tornado.web.RequestHandler):
                 self.write(response_dict)
                 self.finish()
 
-            yield THREAD_POOL.submit(self.job_mgr.enqueue, job,
+            yield THREAD_POOL.submit(self.primary_server.enqueue, job,
                                      job_data_url=file_url)
 
         else:
             file_info = self.request.files['zip_file'][0]
             # file_name = file_info['filename']
-            yield THREAD_POOL.submit(self.job_mgr.enqueue, job,
+            yield THREAD_POOL.submit(self.primary_server.enqueue, job,
                                      job_data_blob=file_info['body'])
 
         response_dict = {'message': "OK:  Submitted job id {}".
@@ -161,13 +214,11 @@ class JobHandler(tornado.web.RequestHandler):
             return DateTimeEncoder().encode(job.__dict__)
 
         if(job_uuid):  # single job info
-            job = self.job_mgr.get_job(job_uuid)
+            job = Job[job_uuid]
             self.write(DateTimeEncoder().encode(job.__dict__))
             self.finish()
         else:
-            # TODO:  refactor to return only job json
-            #        for js to render
-            jobs = self.job_mgr.get_jobs()
+            jobs = Job.values()
 
             # order descending
             jobs.sort(key=lambda job: job.created, reverse=True)
@@ -187,18 +238,15 @@ class AdminHandler(tornado.web.RequestHandler):
     """
     Handles admin tasks
     This is meant as a lightweight backdoor to admin functionality
+
+    VERY INSECURE
     """
 
-    def initialize(self, job_mgr, admin_key=None):
+    def initialize(self, admin_key=None):
         """
-        init with the Manager instance
-
         Args:
-            job_mgr (modelrunner.JobManager):  JobManager instance
-            request_admin_key (str):  Key required to access this section 
+            request_admin_key (str):  Key required to access this section
         """
-
-        self.job_mgr = job_mgr
         self.admin_key = admin_key
 
     def get(self, request_admin_key=None):
@@ -211,7 +259,7 @@ class AdminHandler(tornado.web.RequestHandler):
         if request_admin_key != self.admin_key:
             raise tornado.web.HTTPError(403, "Only Admins Allowed")
 
-        jobs = self.job_mgr.get_jobs()
+        jobs = Job.values()
         jobs.sort(key=lambda job: job.created, reverse=True)
         self.render("view_jobs.html", jobs=jobs, admin=True)
 
@@ -236,12 +284,12 @@ class JobOptionsModule(tornado.web.UIModule):
         href_templ = "<a href=%s>%s</a>"
         # may be confusing, but we need to make kill links ajax
         href_ajax_templ = "<a class='ajax_link' href=%s>%s</a>"
-        if job.status == mgr.JobManager.STATUS_QUEUED:
+        if job.status == Job.STATUS_QUEUED:
             if admin:
                 kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
                 return "%s" % kill_option
 
-        if job.status == mgr.JobManager.STATUS_RUNNING:
+        if job.status == Job.STATUS_RUNNING:
             log_option = href_templ % (job.log_url(), "Log")
             if admin:
                 kill_option = href_ajax_templ % (self.kill_url(job), "Kill")
@@ -249,12 +297,12 @@ class JobOptionsModule(tornado.web.UIModule):
             else:
                 return "%s" % log_option
 
-        if job.status == mgr.JobManager.STATUS_COMPLETE:
+        if job.status == Job.STATUS_COMPLETE:
             log_option = href_templ % (job.log_url(), "Log")
             dload_option = href_templ % (job.download_url(), "Download")
             return "%s,%s" % (log_option, dload_option)
 
-        if job.status == mgr.JobManager.STATUS_FAILED:
+        if job.status == Job.STATUS_FAILED:
             log_option = href_templ % (job.log_url(), "Log")
             return log_option
 
