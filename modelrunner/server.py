@@ -6,10 +6,12 @@ Functions and classes supporting tornado based web server for modelrunner
 from urlparse import urlparse
 import json
 import datetime
+import time
 
 import tornado
 import tornado.web
 import tornado.gen
+
 from concurrent.futures import ThreadPoolExecutor
 
 from . import (Job, Node)
@@ -118,6 +120,15 @@ class StatusHandler(tornado.web.RequestHandler):
     """
     Handles system status requests
     """
+    def initialize(self, primary_server):
+        """
+        init with the PrimaryServer instance
+
+        Args:
+            primary_server (modelrunner.PrimaryServer):  PrimaryServer instance
+        """
+
+        self.primary_server = primary_server
 
     def get(self):
         """
@@ -127,6 +138,10 @@ class StatusHandler(tornado.web.RequestHandler):
 
         def job_json_dict(node):
             return DateTimeEncoder().encode(node.__dict__)
+
+        self.primary_server.refresh_node_status()
+        # give the nodes 1/4 second to reply
+        time.sleep(0.25)
 
         nodes = Node.values()
 

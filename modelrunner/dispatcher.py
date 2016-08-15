@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from modelrunner.redis_utils import pubsub_listen, pop_command
 import logging
+from . import Node
 
 logger = logging.getLogger('modelrunner')
 
@@ -94,13 +95,17 @@ class Dispatcher:
         logger.info("waiting for commands on queue {}".format(self.queue_name))
         while(self._keep_processing_queue):
             # timeout so that we can stop listening via _keep_processing_queue
+            self.command_handler.set_node_status(Node.STATUS_WAITING)
             command_dict = pop_command(
                             self.redis_conn,
                             self.queue_name,
                             timeout=1)
 
             if command_dict is not None:
+                self.command_handler.set_node_status(Node.STATUS_RUNNING)
                 self.process_command(command_dict)
+
+        self.command_handler.set_node_status(Node.STATUS_STOPPED)
 
     def process_command(self, command_dict):
         """

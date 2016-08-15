@@ -4,7 +4,7 @@ from threading import Thread
 from modelrunner.settings import redis_connection
 from modelrunner.redis_utils import enqueue_command, publish_command
 from modelrunner.dispatcher import Dispatcher
-
+from modelrunner.node import Node
 
 class PrimaryCommandHandler:
     """
@@ -19,6 +19,7 @@ class PrimaryCommandHandler:
         self.dispatch = {
             'COMPLETE_JOB': self.complete_job
         }
+        self.status = Node.STATUS_STOPPED
 
     def enqueue_job(self, queue):
         job = {'id': self.count,
@@ -37,6 +38,9 @@ class PrimaryCommandHandler:
         job = command_dict['job']
         job['status'] = 'COMPLETE'
         self.jobs[job['id']] = job
+
+    def set_node_status(self, status):
+        self.status = status
 
 
 class WorkerCommandHandler:
@@ -75,6 +79,10 @@ class WorkerCommandHandler:
     def kill_job(self, command_dict):
         job_id = command_dict['job_id']
         self.jobs[job_id]['status'] = 'KILLING'
+
+    def set_node_status(self, status):
+        self.status = status
+
 
 
 def test_primary_worker_scenario():
