@@ -24,36 +24,23 @@ Components
   
     The server that hosts the modelrunner REST API and manages jobs
 
-- Worker 
+- Workers 
 
-    A server that runs jobs and exposes job log and ability to stop a running job
+   Servers that performs model runs as jobs
 
 - Model
   
     Model that can be run with inputs on a Worker
 
 
-Worker Process
+Job Processing
 --------------
 
-Workers wait on 2 queues:
+Worker nodes wait for jobs on a queue `modelrunner:queues:&lt;model&gt;`
 
-1.  modelrunner:queues:&lt;model&gt;
+The Primary node waits for completed jobs on it's own queue `modelrunner:queues:&lt;primary_id&gt;`
 
-  This is where it waits for jobs to run a specific model
-
-2.  modelrunner:queues:&lt;worker_id&gt;:&lt;model&gt;
-
-  This is where it waits for a job (specific to model) to be killed
-
-Additionally, the Primary waits on a queue:
-
-- modelrunner:queues:&lt;primary_id&gt;
-
-  This is where it waits to be notified of a finished job
-
-Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
-
+Both node types also listen on channels for operational commands (i.e. update status, kill job)
 
 API (Primary Server)
 --------
