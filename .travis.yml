@@ -13,20 +13,25 @@ install:
   - conda info -a
   # setup modelrunner
   - conda create -n modelrunner python=2.7
+  # setup coverage
+  - conda install --yes -n modelrunner coverage
+  - conda install --yes -n modelrunner -c conda-forge python-coveralls
 services:
   - redis-server
 before_script:
   # setup primary, worker(s)
   - source activate modelrunner
   - python setup.py install
+script:
+  - nosetests --with-coverage
+  # now do more complete server level tests
   - ./scripts/start_primary.sh
   - ./scripts/start_worker.sh test
   - ./scripts/start_worker.sh test_2
-script:
-  - echo "in script"
   - sleep 1
   - for pid_file in *.pid; do p=`cat $pid_file`; echo "$pid_file $p"; done
   # test job runs to completion and then another is killed
   - ./testing/test_full.sh http://localhost:8080
    # test 2 jobs created, one is killed, other runs to completion 
   - ./testing/test_queueing.sh http://localhost:8080
+after_success: coveralls
