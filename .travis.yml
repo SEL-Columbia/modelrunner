@@ -14,7 +14,7 @@ install:
   # setup modelrunner
   - conda create -n modelrunner python=2.7
   # setup coverage
-  - conda install --yes -n modelrunner coverage
+  - conda install --yes -n modelrunner coverage nose
   - conda install --yes -n modelrunner -c conda-forge python-coveralls
 services:
   - redis-server
