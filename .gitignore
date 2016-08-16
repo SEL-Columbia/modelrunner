@@ -1,6 +1,6 @@
-data
-worker_data
-build
+/data
+/worker_data
+/build
 *.pyc
 *.swp
 *.log
