@@ -25,35 +25,23 @@ Components
   
     The server that hosts the modelrunner REST API and manages jobs
 
-- Worker 
+- Workers 
 
-    A server that runs jobs and exposes job log and ability to stop a running job
+    Servers that perform model runs as jobs
 
 - Model
   
     Model that can be run with inputs on a Worker
 
 
-Worker Process
+Job Processing
 --------------
 
-Workers wait on 2 queues:
+Worker nodes wait for jobs on a queue `modelrunner:queues:&lt;model&gt;`
 
-1.  modelrunner:queues:&lt;model&gt;
+The Primary node waits for completed jobs on its own queue `modelrunner:queues:&lt;primary_id&gt;`
 
-  This is where it waits for jobs to run a specific model
-
-2.  modelrunner:queues:&lt;worker_id&gt;:&lt;model&gt;
-
-  This is where it waits for a job (specific to model) to be killed
-
-Additionally, the Primary waits on a queue:
-
-- modelrunner:queues:&lt;primary_id&gt;
-
-  This is where it waits to be notified of a finished job
-
-Note:  Workers will log both info and error output which will be available via web-interface through the Primary server
+Both node types also listen on channels for operational commands (i.e. update status, kill job)
 
 
 API (Primary Server)
@@ -148,6 +136,43 @@ API (Primary Server)
     }
     ```
 
+- /status
+
+  Get status of modelrunner nodes
+
+  ```
+  curl -H 'Accept: application/json' http://localhost:8080/status
+
+  {
+      "data": [
+          {
+              "status": "RUNNING",
+              "name": "http://localhost:8888;test",
+              "node_url": "http://localhost:8888",
+              "node_type": "WORKER",
+              "version": "0.5.0",
+              "model": "test"
+          },
+          {
+              "status": "WAITING",
+              "name": "http://localhost:8888;test_2",
+              "node_url": "http://localhost:8888",
+              "node_type": "WORKER",
+              "version": "0.5.0",
+              "model": "test_2"
+          },
+          {
+              "status": "WAITING",
+              "name": "http://localhost:8000",
+              "node_url": "http://localhost:8000",
+              "node_type": "PRIMARY",
+              "version": "0.5.0",
+              "model": null
+          }
+      ]
+  }
+  ```
+
 Bash API
 --------
 
@@ -180,10 +205,10 @@ mr_wait_for_status $job_id "COMPLETE" 10
 echo "SUCCESS"
 ```
 
-See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you need to delete the jobs first via something like:
+See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you can flush the redis db between tests with:
 
 ```
-./scripts/job_list.py | sed -n '2,$p' | awk -F, '{ print $NF }' | ./scripts/job_delete.py
+redis-cli flushdb
 ```
 
 Installation and Deployment
