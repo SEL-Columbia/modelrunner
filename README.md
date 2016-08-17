@@ -10,6 +10,7 @@ web to a broader audience via Model Runner.
 
 [![Build Status](https://travis-ci.org/SEL-Columbia/modelrunner.svg?branch=master)](https://travis-ci.org/SEL-Columbia/modelrunner.svg?branch=master)
 
+[![Coverage Status](https://coveralls.io/repos/SEL-Columbia/modelrunner/badge.svg?branch=master)](https://coveralls.io/r/SEL-Columbia/modelrunner?branch=master)
 
 Architecture
 ------------
