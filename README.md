@@ -26,7 +26,7 @@ Components
 
 - Workers 
 
-   Servers that performs model runs as jobs
+    Servers that perform model runs as jobs
 
 - Model
   
@@ -38,9 +38,10 @@ Job Processing
 
 Worker nodes wait for jobs on a queue `modelrunner:queues:&lt;model&gt;`
 
-The Primary node waits for completed jobs on it's own queue `modelrunner:queues:&lt;primary_id&gt;`
+The Primary node waits for completed jobs on its own queue `modelrunner:queues:&lt;primary_id&gt;`
 
 Both node types also listen on channels for operational commands (i.e. update status, kill job)
+
 
 API (Primary Server)
 --------
@@ -134,6 +135,43 @@ API (Primary Server)
     }
     ```
 
+- /status
+
+  Get status of modelrunner nodes
+
+  ```
+  curl -H 'Accept: application/json' http://localhost:8080/status
+
+  {
+      "data": [
+          {
+              "status": "RUNNING",
+              "name": "http://localhost:8888;test",
+              "node_url": "http://localhost:8888",
+              "node_type": "WORKER",
+              "version": "0.5.0",
+              "model": "test"
+          },
+          {
+              "status": "WAITING",
+              "name": "http://localhost:8888;test_2",
+              "node_url": "http://localhost:8888",
+              "node_type": "WORKER",
+              "version": "0.5.0",
+              "model": "test_2"
+          },
+          {
+              "status": "WAITING",
+              "name": "http://localhost:8000",
+              "node_url": "http://localhost:8000",
+              "node_type": "PRIMARY",
+              "version": "0.5.0",
+              "model": null
+          }
+      ]
+  }
+  ```
+
 Bash API
 --------
 
@@ -166,10 +204,10 @@ mr_wait_for_status $job_id "COMPLETE" 10
 echo "SUCCESS"
 ```
 
-See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you need to delete the jobs first via something like:
+See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you can flush the redis db between tests with:
 
 ```
-./scripts/job_list.py | sed -n '2,$p' | awk -F, '{ print $NF }' | ./scripts/job_delete.py
+redis-cli flushdb
 ```
 
 Installation and Deployment
