@@ -9,6 +9,7 @@ from fabric.api import task, env, run, settings, cd, put, sudo
 DEFAULTS = {
     'home': '/home/mr',
     'config_file': 'config.ini',
+    'redis_config_file': None,
     'environment': 'dev',
     'project': 'modelrunner',
     'modelrunner_repo': 'https://github.com/SEL-Columbia/modelrunner',
@@ -57,13 +58,25 @@ def setup_env(**args):
 @task
 def stop(**args):
     """
-    Stops all modelrunner process
+    Stops all modelrunner process (except redis)
     """
 
     setup_env(**args)
     print("stopping modelrunner processes")
     with cd(env.project_directory):
         run("./scripts/stop_processes.sh", pty=False)
+
+
+@task
+def stop_redis(**args):
+    """
+    Stops redis
+    """
+
+    setup_env(**args)
+    print("stopping redis")
+    with cd(env.project_directory):
+        run("./scripts/stop_redis.sh", pty=False)
 
 
 @task
@@ -128,8 +141,11 @@ def update_modelrunner(**args):
     put("./devops/*", "./modelrunner/devops", mode=0o755)
     put("./scripts/*.sh", "./modelrunner/scripts", mode=0o755)
 
-    # deploy appropriate config file
+    # deploy appropriate config files
     put(env.config_file, './modelrunner/config.ini')
+    if env.redis_config_file is not None:
+        put(env.redis_config_file, './modelrunner/redis.conf')
+
 
 
 @task
@@ -148,6 +164,21 @@ def start_primary(**args):
             run_in_conda_env("./scripts/start_primary_production.sh")
         else:
             run_in_conda_env("./scripts/start_primary.sh")
+
+
+@task
+def start_redis(**args):
+    """
+    Start the redis server
+    """
+    setup_env(**args)
+
+    # stop existing redis
+    stop_redis()
+
+    print("starting redis server on %(host_string)s" % env)
+    with cd(env.project_directory):
+        run_in_conda_env("./scripts/start_redis.sh")
 
 
 @task
