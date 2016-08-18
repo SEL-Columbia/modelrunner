@@ -29,10 +29,6 @@ define(
     help="input file for new job (job_creator only)")
 define("model", default="test", help="model to be run")
 define(
-    "worker_is_primary",
-    default=True,
-    help="Whether worker and primary are one")
-define(
     "admin_key",
     default="",
     help="key to access admin site")
