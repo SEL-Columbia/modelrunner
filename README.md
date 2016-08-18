@@ -227,22 +227,27 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 4.  Update your config files for your primary and workers.  See modelrunner/config.py for parameter definitions.
 
-5.  Setup the servers via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide).  Note that this step is independent of whether the server is a primary or worker server.
+5.  Setup the servers via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide).  
+    - This step is independent of whether the server is a primary or worker server.
+    - If environment is dev, then this will setup modelrunner using the source checked out on that server.  Otherwise, it will install modelrunner from the latest modelrunner conda package.
 
 6.  For workers, setup the model to be run via `fab -H mr@your_server setup_model:model=<model_name>`.  Note that some models may not require this step.  It's also recommended that only one model be run per worker.  
 
-7.  Start servers:
-    1.  Start a primary server via `fab -H mr@your_server start_primary:environment=<dev|prod>` 
-    2.  Start a worker for a particular model via `fab -H mr@your_server start_worker:model=<model_name>,environment=<dev|prod>` (if needed, make sure that step 6 was performed for that model on that worker server) 
+7.  [optional] for separate redis servers, setup via `fab -H mr@your_server setup:redis_config_file=your_redis_config.conf` (ensure that the primary and worker configs reflect the correct redis url)
 
-See fabfile.py for more automated deployment details/options.
+8.  Start servers:
+    1.  Start redis `fab -H mr@your_redis_server start_redis` 
+    2.  Start a primary server via `fab -H mr@your_primary_server start_primary:environment=<dev|prod>` 
+    3.  Start a worker for a particular model via `fab -H mr@your_worker_server start_worker:model=<model_name>,environment=<dev|prod>` (if needed, make sure that step 6 was performed for that model on that worker server) 
+
+See fabfile.py and the devops sub-directory for more automated deployment details/options.
 
 For production deployments, we use [nginx](http://wiki.nginx.org) as the static file server on the primary and worker servers.  See the sample devops/<primary|worker>.nginx config file for details.
 
-Redis is hosted on the primary server, so you'll want to secure access to the redis port (default 6379) and only allow requests to it from worker ip addresses.  Using ufw for firewall protection with ports secured, this should allow redis access for the worker (to be run on primary server running Ubuntu):
+You may want to restrict access to the redis port (default 6379) and only allow requests to it from worker ip addresses.  Using ufw for firewall protection with ports secured, this should allow redis access for the worker (to be run on redis server):
 
 ```
-ufw allow from <worker_ip_address> to any port 6379
+ufw allow from <node_ip_address> to any port 6379
 ```
 
 ### Troubleshooting
