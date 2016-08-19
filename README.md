@@ -270,8 +270,26 @@ python setup.py develop
 conda install redis
 ```
 
-Once you've made changes to your branch, start up a primary and worker in dev mode, run `./testing/test_full.sh <server>` and
-ensure it's exit code is 0.
+To test, startup redis:
+
+```
+./scripts/start_redis.sh
+```
+
+Now you can run `nosetests`
+
+Additionally, you can run broader tests that cover the web application via:
+
+```
+# start primary and 2 worker servers
+./scripts/start_primary.sh
+./scripts/start_worker.sh test
+./scripts/start_worker.sh test_2
+
+# now run the tests
+./testing/test_full.sh http://localhost:8080
+./testing/test_queueing.sh http://localhost:8080
+```
 
 ### Testing via Docker
 
