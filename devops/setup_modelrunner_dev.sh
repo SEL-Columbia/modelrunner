@@ -13,5 +13,3 @@ source activate modelrunner
 python setup.py install 
 # redis and redis-py are not part of setup install
 conda install redis redis-py
-# psutil fails to install via pip/setuptools, so do it here
-conda install psutil
