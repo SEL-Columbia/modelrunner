@@ -13,7 +13,6 @@
   </div>
 </nav>
 <div class="container">
-    <a class='ajax_link' href="/status/refresh">Refresh Status</a>
     <div id="message" class="alert alert-error"></div>
     <table class="table table-striped">
         <thead>
@@ -35,26 +34,4 @@
         </tbody>
     </table>
 </div>
-{% end %}
-{% block js %}
-<script>
-$(document).ready(function(){ 
-    // handle ajax submit
-    $("a.ajax_link").click(function(e){
-        e.preventDefault(); 
-
-        var url = $(this).attr('href');
-        $.ajax({
-            url: url,
-            success: function(data){
-                $("#message").html(data.message)
-            },
-            error: function(data){
-                $("#message").html(data.message)
-            },
-        });
-        return false;
-    });
-});
-</script>
 {% end %}

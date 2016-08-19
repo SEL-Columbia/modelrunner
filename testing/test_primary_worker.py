@@ -128,7 +128,7 @@ def enqueue_worker_job(job):
 
 def enqueue_complete_job(job):
     """
-    Submit job to queue for worker
+    Submit job to queue for primary 
     """
     redis_conn = redis_connection()
     queue_name = primary_queue_name(job.primary_url)

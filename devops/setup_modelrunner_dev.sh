@@ -10,7 +10,6 @@ conda create -n modelrunner python=2.7
 
 cd modelrunner
 source activate modelrunner
-python setup.py develop
-# redis and redis-py are not part in setup install
-# so add them here
+python setup.py install 
+# redis and redis-py are not part of setup install
 conda install redis redis-py
