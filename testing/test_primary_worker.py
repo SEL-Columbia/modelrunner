@@ -59,16 +59,7 @@ def cleanup(config):
     delete_subdirs(config["primary_data_dir"])
     delete_subdirs(config["worker_data_dir"])
 
-    for job in Job.values():
-        del Job[job.uuid]
-
-    for node in Node.values():
-        del Node[node.name]
-
-    # clear all remaining lists
-    for list_key in redis_conn.keys():
-        while redis_conn.lpop(list_key) is not None:
-            pass
+    redis_conn.flushdb()
 
 
 def setup_queued_job(config, job_name, input_file):
@@ -137,7 +128,7 @@ def enqueue_worker_job(job):
 
 def enqueue_complete_job(job):
     """
-    Submit job to queue for worker
+    Submit job to queue for primary 
     """
     redis_conn = redis_connection()
     queue_name = primary_queue_name(job.primary_url)
@@ -278,9 +269,17 @@ def test_run_commands():
         node.model == model_name
 
     # stop both queue and channel threads
-    stop_queue_command = {'command': 'STOP_PROCESSING_QUEUE'}
-    stop_channel_command = {'command': 'STOP_PROCESSING_CHANNELS'}
+    stop_queue_command = {"command": "STOP_PROCESSING_QUEUE"}
+    stop_channel_command = {"command": "STOP_PROCESSING_CHANNELS"}
     publish(worker_channel, stop_queue_command)
+    # give it a sec to timeout and go to stopped
+    time.sleep(2)
+
+    status_command = {"command": "UPDATE_STATUS"}
+    publish(worker_channel, status_command)
+    time.sleep(1)
+    assert Node[name].status == Node.STATUS_STOPPED
+
     publish(worker_channel, stop_channel_command)
     tq.join()
     tc.join()

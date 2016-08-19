@@ -1,3 +1,9 @@
+## 0.5.1
+
+- Better support for Redis deployment to separate server
+
+Closes #49
+
 ## 0.5.0
 
 - Major Refactoring

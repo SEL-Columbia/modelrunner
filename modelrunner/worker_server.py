@@ -126,9 +126,10 @@ class WorkerServer:
         popen_proc = self._run_subprocess(command, job, job_data_log)
 
         # set hidden status attributes
-        self._update_worker_status(Node.STATUS_RUNNING,
-                                   job_uuid=job.uuid,
-                                   job_pid=popen_proc.pid)
+        self.set_node_status(
+            Node.STATUS_RUNNING,
+            job_uuid=job.uuid,
+            job_pid=popen_proc.pid)
 
         logger.info(
             "job {} running with pid {}".
@@ -138,7 +139,7 @@ class WorkerServer:
         return_code = popen_proc.wait()
 
         # Reset hidden status attributes
-        self._update_worker_status(Node.STATUS_WAITING)
+        self.set_node_status(Node.STATUS_WAITING)
 
         # close job log
         job_data_log.close()
@@ -189,8 +190,13 @@ class WorkerServer:
         # just save it as Node redis entity
         Node[self.node.name] = self.node
 
-    def _update_worker_status(self, status, job_uuid=None, job_pid=None):
-        # set hidden worker attributes
+    def set_node_status(self, status, job_uuid=None, job_pid=None):
+        """
+        Will be called by dispatcher to set node status as it
+        waits on queue (WAITING) and as it starts processing (RUNNING)
+
+        Also sets hidden worker attributes
+        """
         self._node.status = status
         self._job_uuid = job_uuid
         self._job_pid = job_pid

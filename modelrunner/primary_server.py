@@ -199,3 +199,10 @@ class PrimaryServer:
         """
         # just save it as Node redis entity
         Node[self.node.name] = self.node
+
+    def set_node_status(self, status):
+        """
+        Will be called by dispatcher to set node status as it
+        waits on queue (WAITING) and as it starts processing (RUNNING)
+        """
+        self._node.status = status
