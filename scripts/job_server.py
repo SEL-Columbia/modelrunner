@@ -61,8 +61,7 @@ application = tornado.web.Application([
         (r"/status", server.StatusHandler, dict(primary_server=primary_server)),
         (r"/admin/(.*)",
          server.AdminHandler,
-         dict(primary_server=primary_server,
-              admin_key=config.options.admin_key))
+         dict(admin_key=config.options.admin_key))
         ],
         template_path=config.options.template_path,
         debug=config.options.debug,

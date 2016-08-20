@@ -1,8 +1,13 @@
 /data
 /worker_data
 /build
+*.pid
 *.pyc
 *.swp
 *.log
 /*.egg-info
 /*.rdb
+*.ini
+!config.ini
+*.conf
+!redis-sample.conf
