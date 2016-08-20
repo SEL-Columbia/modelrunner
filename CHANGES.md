@@ -1,3 +1,7 @@
+## 0.5.2
+
+- minor bug fix (#87) 
+
 ## 0.5.1
 
 - Better support for Redis deployment to separate server
