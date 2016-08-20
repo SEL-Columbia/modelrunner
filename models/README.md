@@ -4,6 +4,7 @@ models
 This directory holds scripts to run the models specific to your deployment of modelrunner.
 
 To enable a new model:
+
 1.  Define deployment script for your model in the devops dir.  Deployment
     should allow the model to be invoked via a script running on a worker.  
 2.  Modify the fabfile so that it can call your deploy script.   

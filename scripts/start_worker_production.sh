@@ -1,11 +1,22 @@
 #!/bin/bash
+# Start worker for model
 
-# start all processes in support of worker server in background
+if [ "$#" -ne 1 ]
+then
+    echo "Usage: start_worker_production.sh model"
+    exit 1
+fi
+
+model=$1
+
+# start process in support of worker server in background
 # assumes modelrunner conda environment has been activated
-job_worker.py --model=sequencer --data_dir=worker_data > job_worker_sequencer.log 2>&1 & echo $! > job_worker_sequencer.pid
-job_worker.py --model=networker --data_dir=worker_data > job_worker_networker.log 2>&1 & echo $! > job_worker_networker.pid
-job_worker.py --model=networkplanner --data_dir=worker_data > job_worker_networkplanner.log 2>&1 & echo $! > job_worker_networkplanner.pid
-job_worker.py --model=test --data_dir=worker_data > job_worker_test.log 2>&1 & echo $! > job_worker_test.pid
+if [ -f job_worker_$model.pid ]
+then
+    echo "worker for model $model already started, skipping..."
+else
+    job_worker.py --model=$model --data_dir=worker_data > job_worker_$model.log 2>&1 & echo $! > job_worker_$model.pid
+fi
 
 # restart nginx for production static server
 # assumes we're in modelrunner dir

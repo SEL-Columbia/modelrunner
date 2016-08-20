@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block css %}
+    <link rel="stylesheet" href="/static/css/style.css"/>
+{% end %}
+{% block body %}
+<nav class="navbar navbar-default baby-blue-bg" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">
+        <img src="/static/img/modelrunner_logo_sm.png" title="model runner" alt="model runner Logo" />
+      </a>
+    </div>
+  </div>
+</nav>
+<div class="container">
+    <div id="message" class="alert alert-error"></div>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th><th>URL</th><th>Status</th><th>Type</th><th>Model</th><th>MR Version</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for node in nodes %}
+        <tr>
+            <td>{{ getattr(node, "name", "") }}</td>
+            <td>{{ getattr(node, "node_url", "") }}</td>
+            <td>{{ getattr(node, "status", "") }}</td>
+            <td>{{ getattr(node, "node_type", "") }}</td>
+            <td>{{ getattr(node, "model", "") }}</td>
+            <td>{{ getattr(node, "version", "") }}</td>
+        </tr>
+        {% end %}
+        </tbody>
+    </table>
+</div>
+{% end %}

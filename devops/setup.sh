@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # curl for getting conda, nginx for static server (production only)
-sudo apt-get install -y curl nginx
+# gcc and python-dev for psutil
+sudo apt-get install -y curl nginx gcc python-dev
 
 if ! conda &> /dev/null
 then

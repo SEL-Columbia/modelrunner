@@ -1,0 +1,19 @@
+component,count,error_category,error_type,description
+cost_calculator,40,METRIC_MODEL,InvalidMetricNodeFile,"Variable value invalid (i.e. got '1000,0' expected '1000.0', or got NA expected Float)"
+cost_calculator,25,FILE_FORMAT,InvalidConfig,Metrics JSON invalid
+cost_calculator,22,METRIC_MODEL,InvalidMetricNodeVariable,Variable value invalid (i.e. household count should be positive)
+sequencer,14,FILE_FORMAT,InvalidShapefile,Projection Missing
+cost_calculator,11,FILE_MISSING,MissingConfig,Input Params
+sequencer,6,TOPOLOGY,ToleranceViolation,Edges less than 0.5 meters
+sequencer,5,SYSTEM,OutOfMemory,Cartesian Explosion of dist pairs
+networker,5,FILE_FORMAT,UnsupportedShapefile,Unsupported Shape Type (2.5D)
+networker,5,FILE_FORMAT,InvalidShapefile,Shapefile had no layers
+sequencer,4,FILE_MISSING,MissingNetwork,Missing network shapefile
+sequencer,4,FILE_FORMAT,InvalidShapefile,Shapefile conversion to networkx graph had nodes id'd by floats
+networker,4,TOPOLOGY,ToleranceViolation,Edges less than 0.5 meters
+networker,3,PROJECTION,ProjectionMismatch,Node Proj not matching Network
+cost_calculator,3,FILE_MISSING,MissingNodes,Missing nodes csv
+cost_calculator,2,METRIC_MODEL,InvalidMetricNodeFile,CSV did not match metric model expected header 
+cost_calculator,2,FILE_MISSING,MissingConfig,Metric Model Params
+sequencer,1,PROJECTION,ProjectionMismatch,Node Proj not matching Network
+cost_calculator,1,METRIC_MODEL,InvalidMetricNodeValue,Division by zero due to curve inputs

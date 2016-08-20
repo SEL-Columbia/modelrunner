@@ -8,7 +8,7 @@ These can be overridden via parse_config_file and parse_command_line
 """
 
 import os
-from tornado.options import define, options
+from tornado.options import define, options  # noqa
 
 define("config_file", default="config.ini", help="config file for modelrunner")
 define("port", default=8888, help="run on the given port", type=int)
@@ -28,10 +28,6 @@ define(
     default="input.zip",
     help="input file for new job (job_creator only)")
 define("model", default="test", help="model to be run")
-define(
-    "worker_is_primary",
-    default=True,
-    help="Whether worker and primary are one")
 define(
     "admin_key",
     default="",

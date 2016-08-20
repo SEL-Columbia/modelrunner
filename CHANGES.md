@@ -1,3 +1,43 @@
+## 0.5.1
+
+- Better support for Redis deployment to separate server
+
+Closes #49
+
+## 0.5.0
+
+- Major Refactoring
+  - standardized 'command' protocol between compute nodes
+  - factored out 'dispatch' of command handlers
+  - nodes now also listen on channels (for operational commands)
+- Expose node status via /status and /status/refresh endpoints
+- Python tests that can run via nose
+
+Closes #42, #48, #63, and #68-75
+
+## 0.4.7
+
+- Fix kill bug #66
+
+## 0.4.6
+
+- Used QUEUED and KILLED status for jobs
+- Allow Kill for QUEUED jobs
+
+## 0.4.5
+
+- Add json output for jobs endpoint
+
+## 0.4.4
+
+- Deployment geared more toward single model per worker
+- Closes #57
+
+## 0.4.3
+
+- Support Sequencer v0.1.0
+- Update bash api to handle zips from url
+
 ## 0.4.2
 
 - Fixes bug #52.  
