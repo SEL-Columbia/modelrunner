@@ -37,9 +37,9 @@ Components
 Job Processing
 --------------
 
-Worker nodes wait for jobs on a queue `modelrunner:queues:&lt;model&gt;`
+Worker nodes wait for jobs on a queue `modelrunner:queues:<model>`
 
-The Primary node waits for completed jobs on its own queue `modelrunner:queues:&lt;primary_id&gt;`
+The Primary node waits for completed jobs on its own queue `modelrunner:queues:<primary_id>`
 
 Both node types also listen on channels for operational commands (i.e. update status, kill job)
 
