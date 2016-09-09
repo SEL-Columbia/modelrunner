@@ -4,6 +4,7 @@ from modelrunner import settings
 from modelrunner.redisent import RedisEntity
 
 import datetime
+from six import string_types
 
 RedisEntity._prefix = "test"
 RedisEntity._db = settings.redis_connection()
@@ -17,7 +18,7 @@ class User(RedisEntity):
         self.created = self._init_created(created)
 
     def _init_created(self, created):
-        if isinstance(created, basestring):
+        if isinstance(created, string_types):
             return datetime.datetime.strptime(created, "%Y-%m-%dT%H:%M:%S")
         elif isinstance(created, datetime.datetime):
             return created

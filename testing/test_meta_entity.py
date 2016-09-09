@@ -12,8 +12,8 @@ class MetaEntity(type):
         cls.data[k] = entity
 
 
-class Entity:
-    __metaclass__ = MetaEntity
+class Entity(metaclass=MetaEntity):
+    # __metaclass__ = MetaEntity
     data = {}
 
 

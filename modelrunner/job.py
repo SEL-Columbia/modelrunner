@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
 from uuid import uuid4
-from redisent import RedisEntity
+from .redisent import RedisEntity
+from six import string_types
 
 
 class Job(RedisEntity):
@@ -49,7 +50,7 @@ class Job(RedisEntity):
         self.uuid = uuid if uuid else str(uuid4())
         # allow created to be an iso formatted string
         # that we cast to datetime.datetime
-        if isinstance(created, basestring):
+        if isinstance(created, string_types):
             created = datetime.datetime.strptime(created,
                                                  "%Y-%m-%dT%H:%M:%S.%f")
         self.created = created if created else datetime.datetime.utcnow()

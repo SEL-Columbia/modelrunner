@@ -93,7 +93,7 @@ class RedisEntityMeta(type):
         return cls(**entity_dict)
 
 
-class RedisEntity:
+class RedisEntity(metaclass=RedisEntityMeta):
     """
     Class implementing base read/write of python objects from/to Redis
 
@@ -105,7 +105,7 @@ class RedisEntity:
 
     See testing/test_redisent.py
     """
-    __metaclass__ = RedisEntityMeta
+    # __metaclass__ = RedisEntityMeta
 
     # the redis db connection
     _db = None
