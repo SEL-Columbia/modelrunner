@@ -7,7 +7,7 @@ import psutil
 from datetime import datetime
 import json
 from zipfile import ZipFile
-from urllib import request 
+from six.moves.urllib.request import urlopen
 from six import string_types
 
 # setup log
@@ -32,7 +32,7 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
 
     destination_file = os.path.join(destination_dir, dest_file_name)
     logger.info("Downloading from url {}".format(url))
-    source = request.urlopen(url)
+    source = urlopen(url)
     dest = open(destination_file, 'wb')
     try:
         shutil.copyfileobj(source, dest)

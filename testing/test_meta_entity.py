@@ -1,6 +1,7 @@
 """
 Test whether metaclass-based implementation of magic methods works
 """
+import six
 
 
 class MetaEntity(type):
@@ -12,7 +13,8 @@ class MetaEntity(type):
         cls.data[k] = entity
 
 
-class Entity(metaclass=MetaEntity):
+@six.add_metaclass(MetaEntity)
+class Entity():
     # __metaclass__ = MetaEntity
     data = {}
 
