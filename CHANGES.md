@@ -1,3 +1,6 @@
+## 0.6.0
+- Python 3 Support (#32)
+
 ## 0.5.2
 
 - minor bug fix (#87) 
