@@ -3,7 +3,7 @@
 Functions and classes supporting tornado based web server for modelrunner
 """
 
-from urlparse import urlparse
+from six.moves.urllib_parse import urlparse
 import json
 import datetime
 import time
