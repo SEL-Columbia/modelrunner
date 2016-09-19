@@ -15,7 +15,7 @@ function mr_cleanup {
 function mr_get_val_from_json {
     # get the value for the key in the stdin stream 
     key=$1
-    python -c "import sys, json; print json.load(sys.stdin)[\"$key\"]"
+    python -c "import sys, json; print(json.load(sys.stdin)[\"$key\"])"
 }
 
 function mr_create_job {
