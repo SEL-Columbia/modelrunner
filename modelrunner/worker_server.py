@@ -109,7 +109,7 @@ class WorkerServer:
             job_data_log.close()
             job.status = Job.STATUS_FAILED
             Job[job.uuid] = job
-            command_dict = {'command': 'COMPLETE', 'job_uuid': job.uuid}
+            command_dict = {'command': 'COMPLETE_JOB', 'job_uuid': job.uuid}
             enqueue_command(redis_connection(), primary_queue, command_dict)
             return
 
