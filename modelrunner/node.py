@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from redisent import RedisEntity
+from .redisent import RedisEntity
 
 
 class Node(RedisEntity):
