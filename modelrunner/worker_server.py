@@ -98,6 +98,11 @@ class WorkerServer:
         # primary_queue to notify primary server of any errors or completion
         primary_queue = primary_queue_name(job.primary_url)
 
+        # update job status
+        job.status = Job.STATUS_RUNNING
+        job.on_primary = False  # now on worker
+        Job[job.uuid] = job
+
         # catch data prep exceptions so that we mark the job as failed
         try:
             self._prep_input(job)
@@ -109,18 +114,13 @@ class WorkerServer:
             job_data_log.close()
             job.status = Job.STATUS_FAILED
             Job[job.uuid] = job
-            command_dict = {'command': 'COMPLETE', 'job_uuid': job.uuid}
+            command_dict = {'command': 'COMPLETE_JOB', 'job_uuid': job.uuid}
             enqueue_command(redis_connection(), primary_queue, command_dict)
             return
 
         # Input has been prepped so start the job
         command = self.model_commands[self.node.model]
         logger.info("starting job {}".format(job.uuid))
-
-        # update job status
-        job.status = Job.STATUS_RUNNING
-        job.on_primary = False  # now on worker
-        Job[job.uuid] = job
 
         # add the input and output dir to the command
         popen_proc = self._run_subprocess(command, job, job_data_log)
