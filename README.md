@@ -205,10 +205,12 @@ mr_wait_for_status $job_id "COMPLETE" 10
 echo "SUCCESS"
 ```
 
-See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you can flush the redis db between tests with:
+See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you can flush the redis db and cleanup the data directories between tests with:
 
 ```
 redis-cli flushdb
+rm -rf data/*
+rm -rf worker_data/*
 ```
 
 Installation and Deployment
