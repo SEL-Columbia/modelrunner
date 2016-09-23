@@ -205,12 +205,6 @@ mr_wait_for_status $job_id "COMPLETE" 10
 echo "SUCCESS"
 ```
 
-See `.travis.yml` for setup required for running tests.  Note that if you are repeatedly running tests in your local dev environment, you can flush the redis db between tests with:
-
-```
-redis-cli flushdb
-```
-
 Installation and Deployment
 ---------------------------
 
@@ -264,15 +258,24 @@ Assumptions for setting up a development environment:
 A simple development environment with one primary and one worker can be setup via the following 
 
 ```
-conda create -n modelrunner python=2.7
+conda create -n modelrunner python=3
 source activate modelrunner
 python setup.py develop
 conda install redis
 ```
 
-To test, startup redis:
+See `.travis.yml` for setup required to run tests.  Note that if you are repeatedly running tests in your local dev environment, you can flush the redis db and cleanup the data directories between tests with:
 
 ```
+redis-cli flushdb
+rm -rf data/*
+rm -rf worker_data/*
+```
+
+To test, make sure all modelrunner processes have been stopped and startup redis:
+
+```
+./scripts/stop_processes.sh
 ./scripts/start_redis.sh
 ```
 

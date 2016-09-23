@@ -4,7 +4,6 @@ Test the WorkerServer through various scenarios
 The PrimaryServer is not necessary for testing
 Though we need to server the input from some http server
 """
-
 import os
 import shutil
 import time

@@ -6,7 +6,7 @@ command dicts are serialized as json
 """
 
 import logging
-from utils import json_dumps_datetime, json_loads_datetime
+from .utils import json_dumps_datetime, json_loads_datetime
 
 # setup log
 logger = logging.getLogger('modelrunner')

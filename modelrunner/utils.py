@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
 import logging
-import urllib2
 import zipfile
 import shutil
 import psutil
 from datetime import datetime
 import json
 from zipfile import ZipFile
+from six.moves.urllib.request import urlopen
+from six import string_types
 
 # setup log
 logger = logging.getLogger('modelrunner')
@@ -31,7 +32,7 @@ def fetch_file_from_url(url, destination_dir, file_name=None):
 
     destination_file = os.path.join(destination_dir, dest_file_name)
     logger.info("Downloading from url {}".format(url))
-    source = urllib2.urlopen(url)
+    source = urlopen(url)
     dest = open(destination_file, 'wb')
     try:
         shutil.copyfileobj(source, dest)
@@ -109,7 +110,7 @@ def json_loads_datetime(dump):
         """Load with datetimes"""
         d = {}
         for k, v in pairs:
-            if isinstance(v, basestring):
+            if isinstance(v, string_types):
                 try:
                     d[k] = datetime.strptime(v, format)
                 except ValueError:

@@ -8,7 +8,7 @@ Note:  This initializes the redisent sub-package as well
 """
 
 from redis import StrictRedis
-import redisent.settings
+from .redisent import settings
 
 _redis_connection = None
 
@@ -21,7 +21,7 @@ def redis_connection(redis_url="redis://@localhost:6379"):
     """
     global _redis_connection
     if _redis_connection is None:
-        _redis_connection = StrictRedis.from_url(redis_url)
+        _redis_connection = StrictRedis.from_url(redis_url, decode_responses=True)
 
     return _redis_connection
 
@@ -31,7 +31,7 @@ def initialize(redis_url="redis://@localhost:6379"):
     Must be called before using modelrunner package
     """
 
-    redisent.settings.initialize(
+    settings.initialize(
         redis_connection=redis_connection(redis_url),
         prefix="modelrunner")
 

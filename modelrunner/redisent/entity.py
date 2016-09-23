@@ -2,6 +2,7 @@
 import json
 import datetime
 import re
+import six
 
 
 class RedisEntityMeta(type):
@@ -92,8 +93,8 @@ class RedisEntityMeta(type):
         """
         return cls(**entity_dict)
 
-
-class RedisEntity:
+@six.add_metaclass(RedisEntityMeta)
+class RedisEntity():
     """
     Class implementing base read/write of python objects from/to Redis
 
@@ -105,7 +106,7 @@ class RedisEntity:
 
     See testing/test_redisent.py
     """
-    __metaclass__ = RedisEntityMeta
+    # __metaclass__ = RedisEntityMeta
 
     # the redis db connection
     _db = None

@@ -7,7 +7,7 @@ sudo apt-get install -y curl nginx gcc python-dev
 if ! conda &> /dev/null
 then
     mkdir -p build; cd build
-    echo "Download and install miniconda for python 2.7"
+    echo "Download and install miniconda for python"
     if [[ ! -e Miniconda-latest-Linux-x86_64.sh ]]
     then
         curl -s -o Miniconda-latest-Linux-x86_64.sh https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh

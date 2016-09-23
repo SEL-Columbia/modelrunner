@@ -14,6 +14,9 @@ model=$1
 if [ -f worker_static_server.pid ]
 then
     echo "static server already started, skipping..."
+elif python -c 'import http.server' > /dev/null 2>&1
+then
+    python -m http.server 8888 > worker_static_server.log 2>&1 & echo $! > worker_static_server.pid
 else
     python -m SimpleHTTPServer 8888 > worker_static_server.log 2>&1 & echo $! > worker_static_server.pid
 fi

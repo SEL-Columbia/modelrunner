@@ -6,7 +6,7 @@ source $HOME/.bash_profile
 rm -rf $HOME/miniconda/envs/modelrunner
 
 conda config --set always_yes yes --set changeps1 no
-conda create -n modelrunner python=2.7
+conda create -n modelrunner python=3
 
 cd modelrunner
 source activate modelrunner
