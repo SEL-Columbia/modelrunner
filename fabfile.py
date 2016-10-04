@@ -76,7 +76,7 @@ def stop_redis(**args):
     setup_env(**args)
     print("stopping redis")
     with cd(env.project_directory):
-        run("./scripts/stop_redis.sh", pty=False)
+        run_conda_enabled("./scripts/stop_redis.py")
 
 
 @task
