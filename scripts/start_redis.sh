@@ -2,7 +2,7 @@
 
 # start redis server process
 # assumes modelrunner conda environment has been activated
-if [ -e redis.conf ]
+if [[ -f redis.conf ]]
 then
     redis-server redis.conf > redis.log 2>&1 &
 else

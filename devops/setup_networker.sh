@@ -2,7 +2,7 @@
 
 source $HOME/.bash_profile
 # so that conda doesn't exit after running
-conda config --set always_yes yes --set changeps1 no
+conda config --set always_yes yes
 
 echo "Setup Networker env"
 rm -rf $HOME/miniconda/envs/networker
