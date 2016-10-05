@@ -13,7 +13,7 @@ source activate sequencer
 # otherwise, use explicitly named input files (legacy usage)
 if [[ -f config.json ]]
 then
-    run_sequencer.py -c config.json -w $input_dir -o $output_dir
+    run_sequencer.py -c config.json -i $input_dir -o $output_dir
 else
-    run_sequencer.py -w $input_dir -m metrics-local.csv -n networks-proposed.shp -d "Demand...Projected.nodal.demand.per.year" -p "Population" -o output
+    run_sequencer.py -i $input_dir -m metrics-local.csv -n networks-proposed.shp -d "Demand...Projected.nodal.demand.per.year" -p "Population" -o $output_dir
 fi
