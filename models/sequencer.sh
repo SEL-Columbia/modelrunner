@@ -15,5 +15,5 @@ if [[ -f config.json ]]
 then
     run_sequencer.py -c config.json -w $input_dir -o $output_dir
 else
-    run_sequencer.py -w $input_dir -m metrics-local.csv -n networks-proposed.shp - "Demand...Projected.nodal.demand.per.year" -p "Population" -o output
+    run_sequencer.py -w $input_dir -m metrics-local.csv -n networks-proposed.shp -d "Demand...Projected.nodal.demand.per.year" -p "Population" -o output
 fi
