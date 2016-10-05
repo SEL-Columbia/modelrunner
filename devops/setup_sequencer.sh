@@ -3,7 +3,7 @@
 source $HOME/.bash_profile
 
 # so that conda doesn't exit after running
-conda config --set always_yes yes --set changeps1 no
+conda config --set always_yes yes
 
 # I believe this is needed if we re-upload sequencer and
 # don't change the version in the meta.yaml

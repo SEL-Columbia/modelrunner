@@ -75,8 +75,9 @@ def stop_redis(**args):
 
     setup_env(**args)
     print("stopping redis")
+    # note, to use python based config, stop via python in modelrunner env
     with cd(env.project_directory):
-        run("./scripts/stop_redis.sh", pty=False)
+        run_in_conda_env("./scripts/stop_redis.py")
 
 
 @task
@@ -139,7 +140,8 @@ def update_modelrunner(**args):
         run("mkdir -p ./modelrunner/scripts")
 
     put("./devops/*", "./modelrunner/devops", mode=0o755)
-    put("./scripts/*.sh", "./modelrunner/scripts", mode=0o755)
+    put("./scripts/*", "./modelrunner/scripts", mode=0o755)
+    put("./models/*", "./modelrunner/models", mode=0o755)
 
     # deploy appropriate config files
     put(env.config_file, './modelrunner/config.ini')

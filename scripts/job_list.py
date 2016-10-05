@@ -30,6 +30,10 @@ if(len(jobs) > 0):
     # order descending
     jobs.sort(key=lambda job: job.created, reverse=True)
     job_dicts = [job.__dict__ for job in jobs]
+    # convert date formats
+    for job_dict in job_dicts:
+       job_dict['created'] = job_dict['created'].strftime("%Y-%m-%dT%H:%M:%S.%f") 
+
     key_sets = [set(job_dict.keys()) for job_dict in job_dicts]
     all_keys = reduce(set.union, key_sets)
 
