@@ -51,6 +51,11 @@ define(
     help="networkplanner model command",
     group="model_command")
 define(
+    "electrificationplanner",
+    default="./electrificationplanner.sh",
+    help="electrificationplanner model command",
+    group="model_command")
+define(
     "networker",
     default="./networker.sh",
     help="networker model command",
