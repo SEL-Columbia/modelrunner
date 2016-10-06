@@ -1,3 +1,9 @@
+## 0.7.0
+- electrificationplanner (infrastructure-planning) support
+
+## 0.6.1
+- Sequencer v0.3.1 support
+
 ## 0.6.0
 - Python 3 Support (#32)
 
