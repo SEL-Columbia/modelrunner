@@ -118,7 +118,6 @@ def setup_model(model, **args):
     # find setup file
     setup_script = "./modelrunner/devops/setup_{model}.sh".\
         format(model=model)
-    # setup sequencer and networker
     run_conda_enabled(setup_script)
 
 

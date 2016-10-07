@@ -1,3 +1,6 @@
+## 0.7.1
+- consistentize model deployment
+
 ## 0.7.0
 - electrificationplanner (infrastructure-planning) support
 

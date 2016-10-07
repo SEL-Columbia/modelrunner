@@ -7,5 +7,4 @@ conda config --set always_yes yes
 echo "Setup Networker env"
 rm -rf $HOME/miniconda/envs/networker
 conda create -n networker python=2.7
-conda install -n networker -c conda-forge -c sel networkplanner-metrics
 conda install -n networker -c conda-forge -c sel networker
