@@ -8,7 +8,7 @@ conda config --set always_yes yes
 # referred to as electrificationplanner in modelrunner
 echo "Setup electrificationplanner env"
 # electrificationplanner requires full source to run
-rm -rf $HOME/electrificationplanner
+rm -rf $HOME/infrastructure-planning
 git clone https://github.com/SEL-Columbia/infrastructure-planning
 
 # install dependencies
