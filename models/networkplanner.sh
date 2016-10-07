@@ -6,5 +6,5 @@ output_dir=$2
 
 echo "Running networkplanner"
 echo "reading input from $input_dir"
-source activate networker
+source activate networkplanner
 run_networkplanner.py config.json -w $input_dir -o $output_dir

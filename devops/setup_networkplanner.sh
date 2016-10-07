@@ -8,4 +8,4 @@ echo "Setup networkplanner env"
 rm -rf $HOME/miniconda/envs/networkplanner
 conda create -n networkplanner python=2.7
 conda install -n networkplanner -c conda-forge -c sel networkplanner-metrics
-conda install -n networkplanner -c conda-forge -c sel networkplanner
+conda install -n networkplanner -c conda-forge -c sel networker
