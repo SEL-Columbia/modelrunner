@@ -210,4 +210,5 @@ def pull(repo, directory, branch="master"):
         if(run("git checkout %s" % branch, warn_only=True).failed):
             run("git checkout -b %s origin/%s" % (branch, branch))
 
+        run("git pull")
         run('find . -name "*.pyc" | xargs rm -rf')

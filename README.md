@@ -221,15 +221,17 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 4.  Update your config files for your primary and workers.  See modelrunner/config.py for parameter definitions.
 
-5.  Setup the servers via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide).  
+5.  If servers had previously been started and you need to update modelrunner by running setup, you need to stop the servers via `fab -H mr@your_server stop` for primary and workers.  If you need to update the redis server, you stop it via `fab -H mr@your_server stop_redis`.  
+
+6.  Setup the servers via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide).  
     - This step is independent of whether the server is a primary or worker server.
     - If environment is dev, then this will setup modelrunner using the source checked out on that server.  Otherwise, it will install modelrunner from the latest modelrunner conda package.
 
-6.  For workers, setup the model to be run via `fab -H mr@your_server setup_model:model=<model_name>`.  Note that some models may not require this step.  It's also recommended that only one model be run per worker.  
+7.  For workers, setup the model to be run via `fab -H mr@your_server setup_model:model=<model_name>`.  Note that some models may not require this step.  It's also recommended that only one model be run per worker.  
 
-7.  [optional] for separate redis servers, setup via `fab -H mr@your_server setup:redis_config_file=your_redis_config.conf` (ensure that the primary and worker configs reflect the correct redis url)
+8.  [optional] for separate redis servers, setup via `fab -H mr@your_server setup:redis_config_file=your_redis_config.conf` (ensure that the primary and worker configs reflect the correct redis url)
 
-8.  Start servers:
+9.  Start servers:
     1.  Start redis `fab -H mr@your_redis_server start_redis` 
     2.  Start a primary server via `fab -H mr@your_primary_server start_primary:environment=<dev|prod>` 
     3.  Start a worker for a particular model via `fab -H mr@your_worker_server start_worker:model=<model_name>,environment=<dev|prod>` (if needed, make sure that step 6 was performed for that model on that worker server) 
