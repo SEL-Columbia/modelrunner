@@ -1,5 +1,4 @@
 tornado
-futures
 redis
 psutil
 six

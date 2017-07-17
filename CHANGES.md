@@ -1,3 +1,6 @@
+## 0.7.2
+- Minor updates for later versions of Python 3
+
 ## 0.7.1
 - consistentize model deployment
 
