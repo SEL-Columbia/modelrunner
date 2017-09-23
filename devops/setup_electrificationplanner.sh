@@ -14,4 +14,4 @@ git clone https://github.com/SEL-Columbia/infrastructure-planning
 # install dependencies
 rm -rf $HOME/miniconda/envs/electrificationplanner
 conda create -n electrificationplanner python=2.7
-conda install -n electrificationplanner -c conda-forge -c sel infrastructure-planning
+conda install -n electrificationplanner --override-channels -c conda-forge -c sel gdal infrastructure-planning

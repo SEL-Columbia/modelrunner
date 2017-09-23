@@ -1,0 +1,16 @@
+# location: /etc/systemd/system/
+# Run script to set hosts correctly on restart in case
+# Network config has changed (seems to happen each restart in ec2)
+[Unit]
+Description = Sets hosts file correctly on restart
+After       = syslog.target
+
+[Service]
+# make sure the shell script is executable (chmod +x $1)
+# and it begins with a shebang (#!/bin/bash)
+ExecStart   = /home/mr/modelrunner/scripts/set_hosts.sh
+
+[Install]
+# multi-user.target corresponds to run level 3
+# roughtly meaning wanted by system start
+WantedBy    = multi-user.target

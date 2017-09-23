@@ -150,6 +150,17 @@ def update_modelrunner(**args):
 
 
 @task
+def update_systemd(**args):
+    """
+    Sets up systemd scripts and enables them
+    """
+    setup_env(**args)
+    # assumes scripts have been copied (mainly set_hosts.sh)
+    sudo("cp ./devops/set_hosts.service /etc/systemd/system/", warn_only=True)
+    sudo("systemctl enable set_hosts.service", warn_only=True)
+
+
+@task
 def start_primary(**args):
     """
     Start the primary server
