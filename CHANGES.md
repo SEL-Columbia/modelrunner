@@ -1,3 +1,7 @@
+## 0.7.3
+- Workaround for ec2 hosts reset (sudo cmds raise warnings without)
+- Update electrificationplanner install
+
 ## 0.7.2
 - Minor updates for later versions of Python 3
 

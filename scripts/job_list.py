@@ -37,6 +37,6 @@ if(len(jobs) > 0):
     key_sets = [set(job_dict.keys()) for job_dict in job_dicts]
     all_keys = reduce(set.union, key_sets)
 
-    dict_writer = csv.DictWriter(sys.stdout, list(all_keys))
+    dict_writer = csv.DictWriter(sys.stdout, sorted(all_keys))
     dict_writer.writer.writerow(list(all_keys))
     dict_writer.writerows(job_dicts)

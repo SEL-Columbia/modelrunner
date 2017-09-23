@@ -11,7 +11,7 @@ from .dispatcher import Dispatcher  # noqa
 from .worker_server import WorkerServer  # noqa
 from .primary_server import PrimaryServer  # noqa
 
-__version__ = "0.7.2"
+__version__ = "0.7.3"
 
 logger = logging.getLogger('modelrunner')
 logger.setLevel(logging.INFO)
