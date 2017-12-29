@@ -232,9 +232,15 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 8.  [optional] for separate redis servers, setup via `fab -H mr@your_server setup:redis_config_file=your_redis_config.conf` (ensure that the primary and worker configs reflect the correct redis url)
 
 9.  Start servers:
-    1.  Start redis `fab -H mr@your_redis_server start_redis` 
-    2.  Start a primary server via `fab -H mr@your_primary_server start_primary:environment=<dev|prod>` 
-    3.  Start a worker for a particular model via `fab -H mr@your_worker_server start_worker:model=<model_name>,environment=<dev|prod>` (if needed, make sure that step 6 was performed for that model on that worker server) 
+    -  Start redis `fab -H mr@your_redis_server start_redis` 
+    -  Start a primary server via `fab -H mr@your_primary_server start_primary:environment=<dev|prod>` 
+    -  Start a worker for a particular model via `fab -H mr@your_worker_server start_worker:model=<model_name>,environment=<dev|prod>` (if needed, make sure that step 6 was performed for that model on that worker server) 
+
+10.  Restart servers:
+    -  Shutown each worker via `fab -H mr@your_worker_server stop` 
+    -  Shutdown primary via `fab -H mr@your_primary_server stop`
+    -  Shutdown redis server via `fab -H mr@your_redis_server stop_redis`
+    -  Follow step 9 above to start back up
 
 See fabfile.py and the devops sub-directory for more automated deployment details/options.
 
