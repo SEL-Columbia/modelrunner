@@ -221,7 +221,9 @@ Here are the basic steps (assumes you have a python environment with fabric inst
 
 4.  Update your config files for your primary and workers.  See modelrunner/config.py for parameter definitions.
 
-5.  If servers had previously been started and you need to update modelrunner by running setup, you need to stop the servers via `fab -H mr@your_server stop` for primary and workers.  If you need to update the redis server, you stop it via `fab -H mr@your_server stop_redis`.  
+5.  If servers had previously been started and you need to update modelrunner by running setup, you need to stop the servers via `fab -H mr@your_server stop` for primary and workers.  
+    - If you need to update the redis server, you can manually login to the machine it's running on, activate the modelrunner conda env and run `redis-cli -a <password> -p <port> shutdown`
+    - NOTE:  The above command will wipe the redis db.  See [redis persistence documentation](https://redis.io/topics/persistence) for more on how to save and restore the state of a redis DB.  
 
 6.  Setup the servers via `fab -H mr@your_server setup:config_file=your_config.ini,environment=<dev|prod>` (see sample config.ini for a guide).  
     - This step is independent of whether the server is a primary or worker server.
