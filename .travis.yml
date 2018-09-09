@@ -1,4 +1,5 @@
 language: python
+python:
 sudo: false
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -13,7 +14,7 @@ install:
   - conda create -n modelrunner python=3
   # setup coverage
   - conda install --yes -n modelrunner coverage nose
-  - conda install --yes -n modelrunner -c conda-forge python-coveralls
+  # - conda install --yes -n modelrunner -c conda-forge python-coveralls
 services:
   - redis-server
 before_script:
